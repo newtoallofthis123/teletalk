@@ -12,7 +12,9 @@ struct SettingsView: View {
         case hotkeys = "Hotkeys"
         case audio = "Audio"
         case models = "Models"
+        case dictionary = "Dictionary"
         case general = "General"
+        case history = "History"
         case permissions = "Permissions"
 
         var icon: String {
@@ -20,7 +22,9 @@ struct SettingsView: View {
             case .hotkeys: return "keyboard"
             case .audio: return "waveform"
             case .models: return "brain"
+            case .dictionary: return "character.book.closed"
             case .general: return "gear"
+            case .history: return "clock.arrow.circlepath"
             case .permissions: return "lock.shield"
             }
         }
@@ -39,7 +43,9 @@ struct SettingsView: View {
             case .hotkeys: HotkeysSettingsView()
             case .audio: AudioSettingsView()
             case .models: ModelsSettingsView()
+            case .dictionary: DictionarySettingsView()
             case .general: GeneralSettingsView()
+            case .history: HistorySettingsView()
             case .permissions: PermissionsSettingsView()
             }
         }
@@ -334,6 +340,17 @@ struct GeneralSettingsView: View {
             }
 
             Section {
+                Toggle("Audio Feedback", isOn: $state.audioFeedbackEnabled)
+            } header: {
+                Label("Sounds", systemImage: "speaker.wave.2")
+                    .foregroundStyle(.secondary)
+            } footer: {
+                Text("Play a sound when recording starts and stops.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+
+            Section {
                 Toggle("Show Overlay", isOn: $state.showOverlay)
 
                 Picker("Position", selection: $state.overlayPosition) {
@@ -432,6 +449,216 @@ struct PermissionRow: View {
                 .foregroundStyle(.secondary)
                 .font(.caption)
         }
+    }
+}
+
+// MARK: - Shared Badge (used by SetupView)
+
+// MARK: - History Tab
+
+struct HistorySettingsView: View {
+    @Environment(TranscriptionHistory.self) private var history
+    @State private var searchText = ""
+
+    private var filteredEntries: [TranscriptionEntry] {
+        if searchText.isEmpty { return history.entries }
+        return history.entries.filter { $0.text.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                TextField("Search transcriptions…", text: $searchText)
+                    .textFieldStyle(.plain)
+
+                if !history.entries.isEmpty {
+                    Button("Clear All", role: .destructive) {
+                        history.clearAll()
+                    }
+                    .buttonStyle(.borderless)
+                    .font(.caption)
+                }
+            }
+            .padding(8)
+
+            Divider()
+
+            if filteredEntries.isEmpty {
+                ContentUnavailableView(
+                    searchText.isEmpty ? "No Transcriptions Yet" : "No Results",
+                    systemImage: searchText.isEmpty ? "text.bubble" : "magnifyingglass",
+                    description: Text(searchText.isEmpty ? "Your transcriptions will appear here." : "Try a different search.")
+                )
+            } else {
+                List(filteredEntries) { entry in
+                    HistoryEntryRow(entry: entry)
+                }
+            }
+        }
+    }
+}
+
+struct HistoryEntryRow: View {
+    let entry: TranscriptionEntry
+    @Environment(TranscriptionHistory.self) private var history
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(entry.text)
+                .lineLimit(3)
+
+            HStack(spacing: 8) {
+                Text(entry.timestamp, style: .relative)
+                Text("·")
+                Text("\(entry.wordCount) words")
+                Text("·")
+                Text(String(format: "%.1fs", entry.audioDurationSeconds))
+            }
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+        }
+        .contextMenu {
+            Button("Copy") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(entry.text, forType: .string)
+            }
+            Button("Delete", role: .destructive) {
+                history.delete(entry)
+            }
+        }
+    }
+}
+
+// MARK: - Dictionary Tab
+
+struct DictionarySettingsView: View {
+    @Environment(AppState.self) private var appState
+    @Environment(PersonalDictionary.self) private var dictionary
+    @State private var showingAddSheet = false
+
+    var body: some View {
+        @Bindable var state = appState
+
+        Form {
+            Section {
+                Toggle("Enable Custom Vocabulary", isOn: $state.dictionaryEnabled)
+
+                switch appState.vocabularyState {
+                case .downloading:
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Downloading CTC model…")
+                            .foregroundStyle(.secondary)
+                    }
+                case .ready:
+                    Label("Vocabulary boosting active", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.caption)
+                case .error(let message):
+                    Label(message, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                case .idle:
+                    EmptyView()
+                }
+            } header: {
+                Label("Vocabulary Boosting", systemImage: "character.book.closed")
+                    .foregroundStyle(.secondary)
+            } footer: {
+                Text("Uses a small CTC model (~64 MB) to bias transcription toward your terms. Requires slightly more memory.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+
+            Section {
+                if dictionary.terms.isEmpty {
+                    Text("No custom terms yet.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(dictionary.terms) { term in
+                        DictionaryTermRow(term: term)
+                    }
+                }
+
+                Button("Add Term…") {
+                    showingAddSheet = true
+                }
+            } header: {
+                Label("Terms (\(dictionary.terms.count))", systemImage: "list.bullet")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .sheet(isPresented: $showingAddSheet) {
+            AddTermSheet()
+        }
+    }
+}
+
+struct DictionaryTermRow: View {
+    let term: DictionaryTerm
+    @Environment(PersonalDictionary.self) private var dictionary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(term.text)
+                .fontWeight(.medium)
+            if !term.aliases.isEmpty {
+                Text("Aliases: \(term.aliases.joined(separator: ", "))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .contextMenu {
+            Button("Delete", role: .destructive) {
+                dictionary.delete(term)
+            }
+        }
+    }
+}
+
+struct AddTermSheet: View {
+    @Environment(PersonalDictionary.self) private var dictionary
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var aliasesText = ""
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Add Custom Term")
+                .font(.headline)
+
+            TextField("Term (e.g. NVIDIA, macOS)", text: $text)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("Aliases, comma-separated (optional)", text: $aliasesText)
+                .textFieldStyle(.roundedBorder)
+
+            Text("Aliases are common mishearings. E.g. for \"Häagen-Dazs\": Hagen Das, Hagen-Daz")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Add") {
+                    let aliases = aliasesText
+                        .split(separator: ",")
+                        .map { $0.trimmingCharacters(in: .whitespaces) }
+                        .filter { !$0.isEmpty }
+                    dictionary.add(DictionaryTerm(text: text, aliases: aliases))
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding()
+        .frame(width: 350)
     }
 }
 

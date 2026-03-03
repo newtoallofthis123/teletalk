@@ -28,6 +28,21 @@ enum Constants {
         static let insertionMethod = "insertionMethod"
         static let showOverlay = "showOverlay"
         static let overlayPosition = "overlayPosition"
+        static let audioFeedbackEnabled = "audioFeedbackEnabled"
+        static let dictionaryEnabled = "dictionaryEnabled"
+    }
+
+    // MARK: - History
+
+    enum History {
+        static let maxEntries = 500
+        static let fileName = "history.json"
+    }
+
+    // MARK: - Dictionary
+
+    enum Dictionary {
+        static let fileName = "dictionary.json"
     }
 
     // MARK: - Audio

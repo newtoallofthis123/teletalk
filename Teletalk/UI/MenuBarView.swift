@@ -5,6 +5,7 @@ struct MenuBarView: View {
     @Environment(AppState.self) private var appState
     @Environment(ModelManager.self) private var modelManager
     @Environment(AudioDeviceEnumerator.self) private var audioDeviceEnumerator
+    @Environment(TranscriptionHistory.self) private var history
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
@@ -16,6 +17,37 @@ struct MenuBarView: View {
         }
 
         Divider()
+
+        // Today's stats
+        if !history.todayEntries.isEmpty {
+            Button {} label: {
+                Label(
+                    "\(history.todayEntries.count) transcriptions · \(history.todayWordCount) words today",
+                    systemImage: "chart.bar"
+                )
+            }
+
+            Divider()
+        }
+
+        // Last 3 transcriptions — click to re-insert
+        if !history.entries.isEmpty {
+            ForEach(history.entries.prefix(3)) { entry in
+                Button {
+                    pasteText(entry.text)
+                } label: {
+                    Label {
+                        Text(entry.text)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    } icon: {
+                        Image(systemName: "text.quote")
+                    }
+                }
+            }
+
+            Divider()
+        }
 
         // Active keybinds
         if appState.toggleShortcutEnabled, let shortcut = KeyboardShortcuts.getShortcut(for: .dictateToggle) {
@@ -46,6 +78,19 @@ struct MenuBarView: View {
     }
 
     // MARK: - Helpers
+
+    private func pasteText(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        // Simulate Cmd+V to paste
+        let source = CGEventSource(stateID: .hidSystemState)
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true) // 'v'
+        keyDown?.flags = .maskCommand
+        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: false)
+        keyUp?.flags = .maskCommand
+        keyDown?.post(tap: .cghidEventTap)
+        keyUp?.post(tap: .cghidEventTap)
+    }
 
     private var selectedDeviceName: String {
         if let uid = appState.selectedAudioDeviceUID,

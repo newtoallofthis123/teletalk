@@ -154,6 +154,34 @@ final class AppState {
         }
     }
 
+    // MARK: - Feedback Settings
+
+    var audioFeedbackEnabled: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.audioFeedbackEnabled) as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(audioFeedbackEnabled, forKey: Constants.Defaults.audioFeedbackEnabled)
+        }
+    }
+
+    // MARK: - Dictionary Settings
+
+    var vocabularyState: VocabularyState = .idle
+
+    enum VocabularyState: Equatable {
+        case idle
+        case downloading
+        case ready
+        case error(String)
+    }
+
+    var onDictionaryEnabledChanged: (() -> Void)?
+
+    var dictionaryEnabled: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.dictionaryEnabled) as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(dictionaryEnabled, forKey: Constants.Defaults.dictionaryEnabled)
+            onDictionaryEnabledChanged?()
+        }
+    }
+
     // MARK: - Computed
 
     /// Human-readable status for the menu bar.
@@ -176,6 +204,9 @@ final class AppState {
             return "Error: \(message)"
         case .ready:
             break
+        }
+        if vocabularyState == .downloading {
+            return "Downloading CTC model…"
         }
         switch recordingState {
         case .idle:

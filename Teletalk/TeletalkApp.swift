@@ -10,6 +10,7 @@ struct TeletalkApp: App {
                 .environment(appDelegate.appState)
                 .environment(appDelegate.modelManager)
                 .environment(appDelegate.audioDeviceEnumerator)
+                .environment(appDelegate.transcriptionHistory)
         }
         .menuBarExtraStyle(.menu)
 
@@ -18,6 +19,8 @@ struct TeletalkApp: App {
                 .environment(appDelegate.appState)
                 .environment(appDelegate.modelManager)
                 .environment(appDelegate.audioDeviceEnumerator)
+                .environment(appDelegate.transcriptionHistory)
+                .environment(appDelegate.personalDictionary)
         }
     }
 }

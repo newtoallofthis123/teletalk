@@ -5,6 +5,8 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
     let modelManager = ModelManager()
+    let transcriptionHistory = TranscriptionHistory()
+    let personalDictionary = PersonalDictionary()
 
     private let audioRecorder = AudioRecorder()
     let audioDeviceEnumerator = AudioDeviceEnumerator()
@@ -37,7 +39,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             if appState.modelState == .ready, let models = modelManager.loadedModels {
                 try? await transcriptionEngine.initialize(models: models)
+
+                // Configure vocabulary boosting if dictionary has terms
+                if appState.dictionaryEnabled && !personalDictionary.terms.isEmpty {
+                    await configureVocabularyWithStatus(terms: personalDictionary.terms)
+                }
             }
+
+            // Listen for dictionary changes
+            let reconfigureVocabulary: () -> Void = { [weak self] in
+                guard let self else { return }
+                Task { @MainActor in
+                    if self.appState.dictionaryEnabled && !self.personalDictionary.terms.isEmpty {
+                        await self.configureVocabularyWithStatus(terms: self.personalDictionary.terms)
+                    } else {
+                        self.transcriptionEngine.disableVocabulary()
+                        self.appState.vocabularyState = .idle
+                    }
+                }
+            }
+            personalDictionary.onTermsChanged = reconfigureVocabulary
+            appState.onDictionaryEnabledChanged = reconfigureVocabulary
 
             setupHotkey()
             startPermissionMonitoring()
@@ -122,6 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 minDuration: appState.minRecordingDuration
             )
             appState.recordingState = .listening
+            if appState.audioFeedbackEnabled { SoundEffect.startRecording.play() }
             overlayWindow?.show()
         } catch {
             logger.error("Failed to start recording: \(error.localizedDescription)")
@@ -140,6 +163,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         appState.recordingState = .transcribing
+        if appState.audioFeedbackEnabled { SoundEffect.stopRecording.play() }
+
+        let sampleCount = samples.count
 
         pipelineTask = Task { @MainActor in
             do {
@@ -155,6 +181,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
                 appState.recordingState = .inserting
                 await textInserter.insert(text: text, method: appState.insertionMethod)
+
+                let audioDuration = Double(sampleCount) / Constants.Audio.sampleRate
+                let entry = TranscriptionEntry(
+                    text: text,
+                    audioDurationSeconds: audioDuration,
+                    modelVersion: appState.selectedModelVersion
+                )
+                transcriptionHistory.add(entry)
 
                 guard !Task.isCancelled else { return }
 
@@ -184,6 +218,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appState.recordingState = .idle
         appState.audioLevel = 0
         overlayWindow?.hide()
+    }
+
+    private func configureVocabularyWithStatus(terms: [DictionaryTerm]) async {
+        appState.vocabularyState = .downloading
+        do {
+            try await transcriptionEngine.configureVocabulary(terms: terms)
+            appState.vocabularyState = .ready
+        } catch {
+            logger.error("Vocabulary configuration failed: \(error.localizedDescription)")
+            appState.vocabularyState = .error(error.localizedDescription)
+        }
     }
 
     private func showError(_ message: String) {
