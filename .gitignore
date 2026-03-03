@@ -1,3 +1,9 @@
 build/
-
 .DS_STORE
+
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+
+# Claude thoughts/runs
+thoughts/runs/
