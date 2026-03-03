@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        observeSettingsWindowClose()
         overlayWindow = OverlayWindow(appState: appState)
 
         audioRecorder.onAutoStop = { [weak self] in
@@ -73,6 +74,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         appState.refreshPermissions()
+    }
+
+    // MARK: - Settings Window Lifecycle
+
+    private func observeSettingsWindowClose() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowWillClose(_:)),
+            name: NSWindow.willCloseNotification,
+            object: nil
+        )
+    }
+
+    @objc private func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              window.title == "TeleTalk Settings" else { return }
+
+        NSApp.setActivationPolicy(.accessory)
     }
 
     private func showSetupWindow() {

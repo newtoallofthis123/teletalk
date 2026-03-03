@@ -62,10 +62,11 @@ struct MenuBarView: View {
         Divider()
 
         Button("Settings...") {
-            if let appDelegate = NSApp.delegate as? AppDelegate {
-                appDelegate.showSettingsWindow()
-            }
+            NSApp.setActivationPolicy(.regular)
             openWindow(id: "settings")
+            DispatchQueue.main.async {
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
         .keyboardShortcut(",")
 

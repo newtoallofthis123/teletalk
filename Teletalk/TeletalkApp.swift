@@ -14,7 +14,7 @@ struct TeletalkApp: App {
         }
         .menuBarExtraStyle(.menu)
 
-        Settings {
+        Window("TeleTalk Settings", id: "settings") {
             SettingsView()
                 .environment(appDelegate.appState)
                 .environment(appDelegate.modelManager)
@@ -22,5 +22,7 @@ struct TeletalkApp: App {
                 .environment(appDelegate.transcriptionHistory)
                 .environment(appDelegate.personalDictionary)
         }
+        .defaultSize(width: 500, height: 450)
+        .windowResizability(.contentSize)
     }
 }
