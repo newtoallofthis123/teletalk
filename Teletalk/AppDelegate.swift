@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let modelManager = ModelManager()
 
     private let audioRecorder = AudioRecorder()
+    let audioDeviceEnumerator = AudioDeviceEnumerator()
     private let transcriptionEngine = TranscriptionEngine()
     private let textInserter = TextInserter()
     private var overlayWindow: OverlayWindow?
@@ -110,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         do {
-            try audioRecorder.startRecording()
+            try audioRecorder.startRecording(deviceUID: appState.selectedAudioDeviceUID)
             appState.recordingState = .listening
             overlayWindow?.show()
         } catch {

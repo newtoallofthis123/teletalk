@@ -1,3 +1,4 @@
+import AudioToolbox
 import AVFoundation
 import os
 
@@ -23,9 +24,9 @@ final class AudioRecorder {
     private var maxDurationTask: Task<Void, Never>?
     private var configObserver: Any?
 
-    /// Starts recording from the default input device.
+    /// Starts recording from the specified audio device (or system default if nil).
     /// Accumulates 16kHz mono Float32 samples into an internal buffer.
-    func startRecording() throws {
+    func startRecording(deviceUID: String? = nil) throws {
         guard state == .idle else {
             logger.warning("startRecording called while already recording")
             return
@@ -35,6 +36,12 @@ final class AudioRecorder {
         recordingStartTime = Date()
 
         let inputNode = engine.inputNode
+
+        // Set specific audio device if requested
+        if let deviceUID {
+            setAudioDevice(uid: deviceUID, on: inputNode)
+        }
+
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
         // Target format: 16kHz, mono, Float32
@@ -160,6 +167,70 @@ final class AudioRecorder {
                 self.onAutoStop?()
             }
         }
+    }
+
+    /// Sets a specific audio input device on the engine's input node by UID.
+    private func setAudioDevice(uid: String, on inputNode: AVAudioInputNode) {
+        guard let audioUnit = inputNode.audioUnit else {
+            logger.warning("Could not get AudioUnit from input node")
+            return
+        }
+
+        // Resolve UID → AudioDeviceID by scanning all devices
+        guard var deviceID = resolveDeviceID(forUID: uid) else {
+            logger.warning("Could not resolve device UID \(uid), using default")
+            return
+        }
+
+        let status = AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &deviceID,
+            UInt32(MemoryLayout<AudioDeviceID>.size)
+        )
+
+        if status != noErr {
+            logger.warning("Failed to set audio device \(uid): \(status), falling back to default")
+        } else {
+            logger.info("Set audio input device to \(uid)")
+        }
+    }
+
+    /// Resolves a device UID string to an AudioDeviceID by scanning all devices.
+    private func resolveDeviceID(forUID uid: String) -> AudioDeviceID? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var dataSize: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &dataSize
+        ) == noErr else { return nil }
+
+        let count = Int(dataSize) / MemoryLayout<AudioDeviceID>.size
+        var deviceIDs = [AudioDeviceID](repeating: 0, count: count)
+        guard AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &dataSize, &deviceIDs
+        ) == noErr else { return nil }
+
+        for deviceID in deviceIDs {
+            var uidAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyDeviceUID,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            var deviceUIDRef: CFString = "" as CFString
+            var uidSize = UInt32(MemoryLayout<CFString>.size)
+            if AudioObjectGetPropertyData(deviceID, &uidAddress, 0, nil, &uidSize, &deviceUIDRef) == noErr,
+               (deviceUIDRef as String) == uid {
+                return deviceID
+            }
+        }
+        return nil
     }
 
     private func removeAudioConfigObserver() {
