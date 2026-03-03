@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var overlayWindow: OverlayWindow?
     private var hotkeyManager: HotkeyManager?
     private var setupWindow: NSWindow?
+    private var aiPostProcessor: Any?
     private var pipelineTask: Task<Void, Never>?
 
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "AppDelegate")
@@ -70,6 +71,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             personalDictionary.onTermsChanged = reconfigureVocabulary
             appState.onDictionaryEnabledChanged = reconfigureVocabulary
             textShortcutManager.onAliasesChanged = reconfigureVocabulary
+
+            if #available(macOS 26, *), AIPostProcessor.isAvailable {
+                aiPostProcessor = AIPostProcessor()
+            }
 
             setupHotkey()
             startPermissionMonitoring()
@@ -207,8 +212,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
 
-                // Post-process transcription
+                // AI enhancement (before alias/emoji expansion)
                 var processedText = text
+                if #available(macOS 26, *),
+                   let hotkeyManager, hotkeyManager.lastTriggerWasAI,
+                   appState.aiEnhancementEnabled,
+                   let processor = aiPostProcessor as? AIPostProcessor
+                {
+                    appState.recordingState = .enhancing
+                    processedText = await processor.enhance(
+                        text: processedText,
+                        systemPrompt: appState.aiSystemPrompt
+                    )
+                    guard !Task.isCancelled else { return }
+                }
+
+                // Post-process transcription
                 if appState.aliasExpansionEnabled {
                     processedText = textShortcutManager.expandAliases(in: processedText)
                 }

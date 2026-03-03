@@ -23,6 +23,7 @@ final class AppState {
         case idle
         case listening
         case transcribing
+        case enhancing
         case inserting
         case error(String)
     }
@@ -217,6 +218,24 @@ final class AppState {
         }
     }
 
+    // MARK: - AI Enhancement Settings
+
+    var aiEnhancementEnabled: Bool = UserDefaults.standard
+        .object(forKey: Constants.Defaults.aiEnhancementEnabled) as? Bool ?? false
+    {
+        didSet {
+            UserDefaults.standard.set(aiEnhancementEnabled, forKey: Constants.Defaults.aiEnhancementEnabled)
+        }
+    }
+
+    var aiSystemPrompt: String = UserDefaults.standard
+        .string(forKey: Constants.Defaults.aiSystemPrompt) ?? Constants.AI.defaultSystemPrompt
+    {
+        didSet {
+            UserDefaults.standard.set(aiSystemPrompt, forKey: Constants.Defaults.aiSystemPrompt)
+        }
+    }
+
     // MARK: - Computed
 
     /// Human-readable status for the menu bar.
@@ -250,6 +269,8 @@ final class AppState {
             return "Listening…"
         case .transcribing:
             return "Transcribing…"
+        case .enhancing:
+            return "Enhancing…"
         case .inserting:
             return "Inserting text…"
         case let .error(message):

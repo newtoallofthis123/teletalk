@@ -5,6 +5,7 @@ import os
 extension KeyboardShortcuts.Name {
     static let dictateToggle = Self("dictateToggle", default: .init(.space, modifiers: [.control, .shift]))
     static let dictateHold = Self("dictateHold", default: .init(.l, modifiers: [.control, .shift]))
+    static let dictateAI = Self("dictateAI")
 }
 
 /// Manages global hotkey registration for hold-to-talk and toggle dictation modes.
@@ -16,6 +17,9 @@ final class HotkeyManager {
     private let onStartRecording: () -> Void
     private let onStopRecording: () -> Void
     private let onCancel: () -> Void
+
+    /// Whether the last hotkey trigger was the AI-enhanced dictation key.
+    var lastTriggerWasAI: Bool = false
 
     private var escapeMonitor: Any?
 
@@ -48,6 +52,7 @@ final class HotkeyManager {
         logger.info("Unregistering hotkeys")
         KeyboardShortcuts.disable(.dictateToggle)
         KeyboardShortcuts.disable(.dictateHold)
+        KeyboardShortcuts.disable(.dictateAI)
         if let escapeMonitor {
             NSEvent.removeMonitor(escapeMonitor)
             self.escapeMonitor = nil
@@ -84,13 +89,20 @@ final class HotkeyManager {
             }
         }
 
+        // AI-enhanced dictation hotkey (toggle-only, always registered — gated at invocation)
+        KeyboardShortcuts.onKeyDown(for: .dictateAI) { [weak self] in
+            Task { @MainActor in
+                self?.handleAIToggle()
+            }
+        }
+
         // Escape key monitor for cancellation during active pipeline
         escapeMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard event.keyCode == 53 else { return }
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 switch appState.recordingState {
-                case .listening, .transcribing:
+                case .listening, .transcribing, .enhancing:
                     logger.info("Escape pressed — cancelling pipeline")
                     onCancel()
                 default:
@@ -104,11 +116,28 @@ final class HotkeyManager {
         logger.info("Hotkey handlers set up (toggle: \(toggle), hold: \(hold))")
     }
 
+    private func handleAIToggle() {
+        guard appState.aiEnhancementEnabled else {
+            logger.debug("Ignoring AI hotkey — AI enhancement not enabled")
+            return
+        }
+        switch appState.recordingState {
+        case .idle:
+            lastTriggerWasAI = true
+            onStartRecording()
+        case .listening:
+            onStopRecording()
+        default:
+            logger.debug("Ignoring AI toggle — state is \(String(describing: self.appState.recordingState))")
+        }
+    }
+
     private func handleHoldKeyDown() {
         guard appState.recordingState == .idle else {
             logger.debug("Ignoring keyDown — not idle (state: \(String(describing: self.appState.recordingState)))")
             return
         }
+        lastTriggerWasAI = false
         keyDownTime = ContinuousClock.now
         onStartRecording()
     }
@@ -137,6 +166,7 @@ final class HotkeyManager {
     private func handleToggle() {
         switch appState.recordingState {
         case .idle:
+            lastTriggerWasAI = false
             onStartRecording()
         case .listening:
             onStopRecording()
