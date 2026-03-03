@@ -89,12 +89,10 @@ final class HotkeyManager {
             }
         }
 
-        // AI-enhanced dictation hotkey (toggle-only)
-        if appState.aiEnhancementEnabled {
-            KeyboardShortcuts.onKeyDown(for: .dictateAI) { [weak self] in
-                Task { @MainActor in
-                    self?.handleAIToggle()
-                }
+        // AI-enhanced dictation hotkey (toggle-only, always registered — gated at invocation)
+        KeyboardShortcuts.onKeyDown(for: .dictateAI) { [weak self] in
+            Task { @MainActor in
+                self?.handleAIToggle()
             }
         }
 
@@ -119,6 +117,10 @@ final class HotkeyManager {
     }
 
     private func handleAIToggle() {
+        guard appState.aiEnhancementEnabled else {
+            logger.debug("Ignoring AI hotkey — AI enhancement not enabled")
+            return
+        }
         switch appState.recordingState {
         case .idle:
             lastTriggerWasAI = true
