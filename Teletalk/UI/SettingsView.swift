@@ -167,6 +167,39 @@ struct AudioSettingsView: View {
             }
 
             Section {
+                Toggle("Speaker Diarization", isOn: $state.diarizationEnabled)
+
+                switch appState.diarizationModelState {
+                case .downloading:
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Downloading diarization models…")
+                            .foregroundStyle(.secondary)
+                    }
+                case .ready:
+                    Label("Diarization ready", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .font(.caption)
+                case let .error(message):
+                    Label(message, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                case .idle:
+                    EmptyView()
+                }
+            } header: {
+                Label("Speaker Identification", systemImage: "person.2.wave.2")
+                    .foregroundStyle(.secondary)
+            } footer: {
+                Text(
+                    "Identifies different speakers in multi-person recordings. Downloads ~50-100 MB of models when first enabled."
+                )
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            }
+
+            Section {
                 Picker("Max Recording", selection: $state.maxRecordingDuration) {
                     ForEach(durationOptions, id: \.1) { label, value in
                         Text(label).tag(value)
