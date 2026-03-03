@@ -18,9 +18,9 @@ final class TranscriptionEngine {
         logger.info("TranscriptionEngine initialized")
     }
 
-    /// Transcribe audio samples (16kHz mono Float32 PCM) into text.
+    /// Transcribe audio samples (16kHz mono Float32 PCM) into an ASRResult.
     /// Returns nil if audio is too short or transcription is empty.
-    func transcribe(samples: [Float]) async throws -> String? {
+    func transcribe(samples: [Float]) async throws -> ASRResult? {
         guard let asrManager else {
             throw TranscriptionError.notInitialized
         }
@@ -43,7 +43,7 @@ final class TranscriptionEngine {
             return nil
         }
 
-        return text
+        return result
     }
 
     /// Configure vocabulary boosting with user's personal dictionary terms.

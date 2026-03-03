@@ -1,4 +1,5 @@
 import Cocoa
+import FluidAudio
 import os
 import SwiftUI
 
@@ -202,18 +203,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         pipelineTask = Task { @MainActor in
             do {
-                let text = try await transcriptionEngine.transcribe(samples: samples)
+                let asrResult = try await transcriptionEngine.transcribe(samples: samples)
 
                 guard !Task.isCancelled else { return }
 
-                guard let text, !text.isEmpty else {
+                guard let asrResult else {
                     logger.info("Nothing transcribed")
                     showError("Nothing heard")
                     return
                 }
 
                 // AI enhancement (before alias/emoji expansion)
-                var processedText = text
+                var processedText = asrResult.text
                 if #available(macOS 26, *),
                    let hotkeyManager, hotkeyManager.lastTriggerWasAI,
                    appState.aiEnhancementEnabled,
