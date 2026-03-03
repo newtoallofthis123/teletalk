@@ -35,7 +35,7 @@ enum Constants {
         // AI Enhancement
         static let aiEnhancementEnabled = "aiEnhancementEnabled"
         static let aiSystemPrompt = "aiSystemPrompt"
-        // Diarization
+        /// Diarization
         static let diarizationEnabled = "diarizationEnabled"
     }
 
