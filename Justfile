@@ -23,6 +23,16 @@ install: build-release
     cp -R {{build_dir}}/Build/Products/Release/Teletalk.app /Applications/
     @echo "Installed to /Applications/Teletalk.app"
 
+# Release build using Xcode's default DerivedData, then install to /Applications
+local-release:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    xcodebuild -project {{project}} -scheme {{scheme}} -configuration Release build
+    app_path=$(xcodebuild -project {{project}} -scheme {{scheme}} -configuration Release -showBuildSettings 2>/dev/null \
+        | grep -m1 'BUILT_PRODUCTS_DIR' | awk '{print $3}')
+    cp -R "$app_path/Teletalk.app" /Applications/
+    echo "Installed to /Applications/Teletalk.app"
+
 # Clean build artifacts
 clean:
     xcodebuild -project {{project}} -scheme {{scheme}} clean
