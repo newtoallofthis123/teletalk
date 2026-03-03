@@ -20,12 +20,28 @@ Local, privacy-first dictation for macOS. Hold a hotkey, speak, release — tran
 - Apple Silicon (M1 or later)
 - Microphone, Accessibility, and Input Monitoring permissions
 
-## Build
+## Install
 
-```
+```bash
 git clone https://github.com/newtoallofthis123/teletalk.git
+cd teletalk
+./install.sh
+```
+
+The installer builds from source, lets you choose between ad-hoc signing (no Apple account) or signing with your Developer ID, and copies the app to `/Applications`.
+
+**Manual build** (if you prefer Xcode):
+
+```bash
 open Teletalk.xcodeproj
-# Run in Xcode (Cmd+R)
+# Build & Run with Cmd+R
+```
+
+Or from the command line:
+
+```bash
+xcodebuild -project Teletalk.xcodeproj -scheme Teletalk -configuration Release -derivedDataPath build
+cp -r build/Build/Products/Release/Teletalk.app /Applications/
 ```
 
 The transcription model (~600 MB) downloads automatically on first launch.
