@@ -111,7 +111,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         do {
-            try audioRecorder.startRecording(deviceUID: appState.selectedAudioDeviceUID)
+            try audioRecorder.startRecording(
+                deviceUID: appState.selectedAudioDeviceUID,
+                maxDuration: appState.maxRecordingDuration,
+                minDuration: appState.minRecordingDuration
+            )
             appState.recordingState = .listening
             overlayWindow?.show()
         } catch {
@@ -142,7 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
 
                 appState.recordingState = .inserting
-                await textInserter.insert(text: text)
+                await textInserter.insert(text: text, method: appState.insertionMethod)
 
                 // Brief "Done" display, then hide
                 try? await Task.sleep(for: .milliseconds(

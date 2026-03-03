@@ -9,12 +9,24 @@ final class TextInserter {
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "TextInserter")
 
     /// Insert text at the current cursor position in any app.
-    func insert(text: String) async {
-        if tryAccessibilityInsertion(text) {
-            logger.info("Inserted via Accessibility API")
-        } else {
+    func insert(text: String, method: AppState.InsertionMethod = .auto) async {
+        switch method {
+        case .auto:
+            if tryAccessibilityInsertion(text) {
+                logger.info("Inserted via Accessibility API")
+            } else {
+                await clipboardPasteInsertion(text)
+                logger.info("Inserted via clipboard paste fallback")
+            }
+        case .accessibilityOnly:
+            if tryAccessibilityInsertion(text) {
+                logger.info("Inserted via Accessibility API")
+            } else {
+                logger.warning("Accessibility insertion failed, no fallback (accessibilityOnly mode)")
+            }
+        case .clipboardOnly:
             await clipboardPasteInsertion(text)
-            logger.info("Inserted via clipboard paste fallback")
+            logger.info("Inserted via clipboard paste")
         }
     }
 

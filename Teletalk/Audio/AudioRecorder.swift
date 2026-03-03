@@ -23,15 +23,19 @@ final class AudioRecorder {
     private var recordingStartTime: Date?
     private var maxDurationTask: Task<Void, Never>?
     private var configObserver: Any?
+    private var maxDuration: TimeInterval = 120
+    private var minDuration: TimeInterval = 0.2
 
     /// Starts recording from the specified audio device (or system default if nil).
     /// Accumulates 16kHz mono Float32 samples into an internal buffer.
-    func startRecording(deviceUID: String? = nil) throws {
+    func startRecording(deviceUID: String? = nil, maxDuration: TimeInterval = 120, minDuration: TimeInterval = 0.2) throws {
         guard state == .idle else {
             logger.warning("startRecording called while already recording")
             return
         }
 
+        self.maxDuration = maxDuration
+        self.minDuration = minDuration
         samples.removeAll()
         recordingStartTime = Date()
 
@@ -71,8 +75,9 @@ final class AudioRecorder {
 
         // Auto-stop after max duration
         maxDurationTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(Constants.Audio.maximumRecordingDuration))
-            guard let self, self.state == .recording else { return }
+            guard let self else { return }
+            try? await Task.sleep(for: .seconds(self.maxDuration))
+            guard self.state == .recording else { return }
             self.logger.warning("Max recording duration reached, auto-stopping")
             self.onAutoStop?()
         }
@@ -101,7 +106,7 @@ final class AudioRecorder {
         logger.info("Recording stopped — \(String(format: "%.1f", duration))s, \(self.samples.count) samples")
 
         // Discard accidental taps
-        if duration < Constants.Audio.minimumRecordingDuration {
+        if duration < minDuration {
             logger.info("Recording too short (\(String(format: "%.0f", duration * 1000))ms), discarding")
             samples.removeAll()
             return nil

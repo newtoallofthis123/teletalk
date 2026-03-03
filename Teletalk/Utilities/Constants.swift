@@ -34,9 +34,6 @@ enum Constants {
 
     enum Audio {
         static let sampleRate: Double = 16_000
-        // TODO: Phase G — rewire AudioRecorder to read from AppState, then remove these
-        static let minimumRecordingDuration: TimeInterval = 0.2
-        static let maximumRecordingDuration: TimeInterval = 120
     }
 
     // MARK: - UI
