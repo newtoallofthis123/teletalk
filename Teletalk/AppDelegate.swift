@@ -23,6 +23,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         audioRecorder.onAutoStop = { [weak self] in
             self?.stopPipeline()
         }
+        audioRecorder.onAudioLevel = { [weak self] level in
+            self?.appState.audioLevel = level
+        }
 
         Task { @MainActor in
             await appState.requestPermissionsOnLaunch()
@@ -125,6 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func stopPipeline() {
+        appState.audioLevel = 0
         let samples = audioRecorder.stopRecording()
 
         guard let samples, !samples.isEmpty else {

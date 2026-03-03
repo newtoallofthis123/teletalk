@@ -17,6 +17,9 @@ final class AudioRecorder {
     /// Called when recording is auto-stopped (max duration or mic disconnection).
     var onAutoStop: (() -> Void)?
 
+    /// Called with real-time RMS audio level (0…1) for waveform visualization.
+    var onAudioLevel: ((Float) -> Void)?
+
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "AudioRecorder")
     private let engine = AVAudioEngine()
     private var samples: [Float] = []
@@ -64,8 +67,9 @@ final class AudioRecorder {
         }
 
         let bufferSize = AVAudioFrameCount(4096)
+        let levelCallback = onAudioLevel
         inputNode.installTap(onBus: 0, bufferSize: bufferSize, format: inputFormat) { [weak self] buffer, _ in
-            self?.processBuffer(buffer, converter: converter, targetFormat: targetFormat)
+            self?.processBuffer(buffer, converter: converter, targetFormat: targetFormat, onAudioLevel: levelCallback)
         }
 
         engine.prepare()
@@ -122,7 +126,8 @@ final class AudioRecorder {
     private nonisolated func processBuffer(
         _ buffer: AVAudioPCMBuffer,
         converter: AVAudioConverter,
-        targetFormat: AVAudioFormat
+        targetFormat: AVAudioFormat,
+        onAudioLevel: ((Float) -> Void)? = nil
     ) {
         let frameCapacity = AVAudioFrameCount(
             Double(buffer.frameLength) * (targetFormat.sampleRate / buffer.format.sampleRate)
@@ -154,6 +159,21 @@ final class AudioRecorder {
         guard let channelData = convertedBuffer.floatChannelData?[0] else { return }
         let count = Int(convertedBuffer.frameLength)
         let newSamples = Array(UnsafeBufferPointer(start: channelData, count: count))
+
+        // Calculate RMS for waveform visualization
+        if onAudioLevel != nil && count > 0 {
+            var sumOfSquares: Float = 0
+            for i in 0..<count {
+                let sample = channelData[i]
+                sumOfSquares += sample * sample
+            }
+            let rms = sqrtf(sumOfSquares / Float(count))
+            // Clamp to 0…1 (typical speech RMS is 0.01–0.3)
+            let normalized = min(rms * 15.0, 1.0)
+            Task { @MainActor in
+                onAudioLevel?(normalized)
+            }
+        }
 
         Task { @MainActor [weak self] in
             self?.samples.append(contentsOf: newSamples)

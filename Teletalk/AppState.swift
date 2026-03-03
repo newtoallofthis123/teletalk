@@ -30,6 +30,9 @@ final class AppState {
 
     var recordingState: RecordingState = .idle
 
+    /// Real-time audio input level (RMS, 0…1) for waveform visualization.
+    var audioLevel: Float = 0
+
     // MARK: - Permission State
 
     struct PermissionState: Equatable {
