@@ -8,6 +8,8 @@ struct TeletalkApp: App {
         MenuBarExtra("TeleTalk", systemImage: "mic.fill") {
             MenuBarView()
                 .environment(appDelegate.appState)
+                .environment(appDelegate.modelManager)
+                .environment(appDelegate.audioDeviceEnumerator)
         }
 
         Settings {
