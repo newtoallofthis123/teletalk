@@ -28,8 +28,9 @@ struct GeneralSettingsView: View {
         @Bindable var state = appState
 
         Form {
-            Section("Hotkey") {
-                KeyboardShortcuts.Recorder("Shortcut:", name: .dictate)
+            Section("Hotkeys") {
+                KeyboardShortcuts.Recorder("Toggle:", name: .dictateToggle)
+                KeyboardShortcuts.Recorder("Hold-to-talk:", name: .dictateHold)
             }
 
             Section("General") {

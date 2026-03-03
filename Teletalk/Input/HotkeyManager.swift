@@ -3,7 +3,8 @@ import os
 import KeyboardShortcuts
 
 extension KeyboardShortcuts.Name {
-    static let dictate = Self("dictate", default: .init(.space, modifiers: [.control, .shift]))
+    static let dictateToggle = Self("dictateToggle", default: .init(.space, modifiers: [.control, .shift]))
+    static let dictateHold = Self("dictateHold", default: .init(.l, modifiers: [.control, .shift]))
 }
 
 /// Manages global hotkey registration for hold-to-talk and toggle dictation modes.
@@ -28,20 +29,21 @@ final class HotkeyManager {
         self.onStopRecording = onStopRecording
     }
 
-    /// Registers the global hotkey. Call after permissions are granted.
+    /// Registers both global hotkeys. Call after permissions are granted.
     func register() {
-        logger.info("Registering hotkey")
+        logger.info("Registering hotkeys")
         setupHandlers()
     }
 
-    /// Unregisters the global hotkey.
+    /// Unregisters all global hotkeys.
     func unregister() {
-        logger.info("Unregistering hotkey")
-        KeyboardShortcuts.disable(KeyboardShortcuts.Name.dictate)
+        logger.info("Unregistering hotkeys")
+        KeyboardShortcuts.disable(.dictateToggle)
+        KeyboardShortcuts.disable(.dictateHold)
     }
 
-    /// Re-registers handlers when hotkey mode changes.
-    func updateMode() {
+    /// Re-registers handlers when enable states change.
+    func refreshHandlers() {
         unregister()
         setupHandlers()
     }
@@ -49,19 +51,28 @@ final class HotkeyManager {
     // MARK: - Private
 
     private func setupHandlers() {
-        // Hold-to-talk mode (default until dual keybinds in Phase B)
-        KeyboardShortcuts.onKeyDown(for: .dictate) { [weak self] in
-            Task { @MainActor in
-                self?.handleHoldKeyDown()
-            }
-        }
-        KeyboardShortcuts.onKeyUp(for: .dictate) { [weak self] in
-            Task { @MainActor in
-                self?.handleHoldKeyUp()
+        if appState.toggleShortcutEnabled {
+            KeyboardShortcuts.onKeyDown(for: .dictateToggle) { [weak self] in
+                Task { @MainActor in
+                    self?.handleToggle()
+                }
             }
         }
 
-        logger.info("Hotkey handlers set up")
+        if appState.holdShortcutEnabled {
+            KeyboardShortcuts.onKeyDown(for: .dictateHold) { [weak self] in
+                Task { @MainActor in
+                    self?.handleHoldKeyDown()
+                }
+            }
+            KeyboardShortcuts.onKeyUp(for: .dictateHold) { [weak self] in
+                Task { @MainActor in
+                    self?.handleHoldKeyUp()
+                }
+            }
+        }
+
+        logger.info("Hotkey handlers set up (toggle: \(self.appState.toggleShortcutEnabled), hold: \(self.appState.holdShortcutEnabled))")
     }
 
     private func handleHoldKeyDown() {
@@ -85,7 +96,6 @@ final class HotkeyManager {
             if held < debounceThreshold {
                 logger.info("Ignoring short press (\(held)) — below debounce threshold")
                 keyDownTime = nil
-                // Cancel the recording since it was too short
                 onStopRecording()
                 return
             }
