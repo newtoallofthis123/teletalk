@@ -158,11 +158,10 @@ func formatSpeakerAttributedText(
     var resultSegments: [SpeakerSegment] = []
 
     for run in runs {
-        let text = run.tokens.joined(separator: " ")
-            .replacingOccurrences(of: " ,", with: ",")
-            .replacingOccurrences(of: " .", with: ".")
-            .replacingOccurrences(of: " ?", with: "?")
-            .replacingOccurrences(of: " !", with: "!")
+        // Tokens use SentencePiece convention: ▁ prefix = word boundary
+        // Concatenate directly, then replace ▁ with space (matches FluidAudio's own decoding)
+        let text = run.tokens.joined()
+            .replacingOccurrences(of: "▁", with: " ")
             .trimmingCharacters(in: .whitespaces)
         let label = "Speaker \(run.speakerNumber)"
         formattedLines.append("\(label): \(text)")
