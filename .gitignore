@@ -1,9 +1,18 @@
 build/
+.DS_Store
 .DS_STORE
+DerivedData/
+.swiftpm/
+.build/
 
 # Xcode user data
 xcuserdata/
 *.xcuserstate
+
+# Archives & symbols
+*.ipa
+*.xcarchive
+*.dSYM.zip
 
 # Claude thoughts/runs
 thoughts/runs/
