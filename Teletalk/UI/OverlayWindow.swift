@@ -73,10 +73,12 @@ final class OverlayWindow {
 
     private func createPanel() {
         let hostingView = NSHostingView(rootView: OverlayView(appState: appState))
-        hostingView.frame = NSRect(x: 0, y: 0, width: 200, height: 40)
+        let intrinsicSize = hostingView.fittingSize
+        let size = NSSize(width: max(intrinsicSize.width, 120), height: max(intrinsicSize.height, 36))
+        hostingView.frame = NSRect(origin: .zero, size: size)
 
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 40),
+            contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: true

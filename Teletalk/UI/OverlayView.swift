@@ -12,7 +12,6 @@ struct OverlayView: View {
                 EmptyView()
             case .listening:
                 pillContent(tint: .blue) {
-                    Image(systemName: "mic.fill")
                     WaveformBars(level: appState.audioLevel)
                     Text("Listening…")
                 }
