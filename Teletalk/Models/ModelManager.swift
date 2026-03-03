@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import os
 import FluidAudio
 
@@ -30,6 +31,7 @@ struct ModelInfo: Identifiable {
 
 /// Manages download, deletion, and switching of Parakeet TDT speech recognition models.
 @MainActor
+@Observable
 final class ModelManager {
 
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "ModelManager")

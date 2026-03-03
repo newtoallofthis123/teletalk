@@ -13,6 +13,8 @@ struct TeletalkApp: App {
         Settings {
             SettingsView()
                 .environment(appDelegate.appState)
+                .environment(appDelegate.modelManager)
+                .environment(appDelegate.audioDeviceEnumerator)
         }
     }
 }
