@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.png" width="200" alt="TeleTalk icon">
+  <img src="assets/banner.png" alt="TeleTalk banner">
 </p>
 
 # TeleTalk
