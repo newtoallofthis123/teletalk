@@ -45,26 +45,109 @@ final class AppState {
 
     var permissions = PermissionState()
 
-    // MARK: - Hotkey Mode
+    // MARK: - Setting Enums
 
-    enum HotkeyMode: String, CaseIterable {
-        case holdToTalk
-        case toggle
+    enum InsertionMethod: String, CaseIterable {
+        case auto
+        case accessibilityOnly
+        case clipboardOnly
 
         var displayName: String {
             switch self {
-            case .holdToTalk: return "Hold to Talk"
-            case .toggle: return "Toggle"
+            case .auto: return "Auto"
+            case .accessibilityOnly: return "Accessibility Only"
+            case .clipboardOnly: return "Clipboard Only"
             }
         }
     }
 
-    var hotkeyMode: HotkeyMode = {
-        let stored = UserDefaults.standard.string(forKey: Constants.Defaults.hotkeyMode) ?? HotkeyMode.holdToTalk.rawValue
-        return HotkeyMode(rawValue: stored) ?? .holdToTalk
+    enum OverlayPosition: String, CaseIterable {
+        case bottomCenter
+        case topCenter
+        case nearCursor
+
+        var displayName: String {
+            switch self {
+            case .bottomCenter: return "Bottom Center"
+            case .topCenter: return "Top Center"
+            case .nearCursor: return "Near Cursor"
+            }
+        }
+    }
+
+    // MARK: - Hotkey Settings
+
+    var toggleShortcutEnabled: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.toggleShortcutEnabled) as? Bool ?? true {
+        didSet {
+            if !toggleShortcutEnabled && !holdShortcutEnabled {
+                toggleShortcutEnabled = true
+                return
+            }
+            UserDefaults.standard.set(toggleShortcutEnabled, forKey: Constants.Defaults.toggleShortcutEnabled)
+        }
+    }
+
+    var holdShortcutEnabled: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.holdShortcutEnabled) as? Bool ?? true {
+        didSet {
+            if !holdShortcutEnabled && !toggleShortcutEnabled {
+                holdShortcutEnabled = true
+                return
+            }
+            UserDefaults.standard.set(holdShortcutEnabled, forKey: Constants.Defaults.holdShortcutEnabled)
+        }
+    }
+
+    // MARK: - Audio Settings
+
+    var selectedAudioDeviceUID: String? = UserDefaults.standard.string(forKey: Constants.Defaults.selectedAudioDeviceUID) {
+        didSet {
+            UserDefaults.standard.set(selectedAudioDeviceUID, forKey: Constants.Defaults.selectedAudioDeviceUID)
+        }
+    }
+
+    var maxRecordingDuration: Double = UserDefaults.standard.object(forKey: Constants.Defaults.maxRecordingDuration) as? Double ?? 120 {
+        didSet {
+            UserDefaults.standard.set(maxRecordingDuration, forKey: Constants.Defaults.maxRecordingDuration)
+        }
+    }
+
+    var minRecordingDuration: Double = UserDefaults.standard.object(forKey: Constants.Defaults.minRecordingDuration) as? Double ?? 0.2 {
+        didSet {
+            UserDefaults.standard.set(minRecordingDuration, forKey: Constants.Defaults.minRecordingDuration)
+        }
+    }
+
+    // MARK: - Model Settings
+
+    var selectedModelVersion: String = UserDefaults.standard.string(forKey: Constants.Defaults.selectedModelVersion) ?? "v2" {
+        didSet {
+            UserDefaults.standard.set(selectedModelVersion, forKey: Constants.Defaults.selectedModelVersion)
+        }
+    }
+
+    // MARK: - General Settings
+
+    var insertionMethod: InsertionMethod = {
+        let stored = UserDefaults.standard.string(forKey: Constants.Defaults.insertionMethod) ?? InsertionMethod.auto.rawValue
+        return InsertionMethod(rawValue: stored) ?? .auto
     }() {
         didSet {
-            UserDefaults.standard.set(hotkeyMode.rawValue, forKey: Constants.Defaults.hotkeyMode)
+            UserDefaults.standard.set(insertionMethod.rawValue, forKey: Constants.Defaults.insertionMethod)
+        }
+    }
+
+    var showOverlay: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.showOverlay) as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(showOverlay, forKey: Constants.Defaults.showOverlay)
+        }
+    }
+
+    var overlayPosition: OverlayPosition = {
+        let stored = UserDefaults.standard.string(forKey: Constants.Defaults.overlayPosition) ?? OverlayPosition.bottomCenter.rawValue
+        return OverlayPosition(rawValue: stored) ?? .bottomCenter
+    }() {
+        didSet {
+            UserDefaults.standard.set(overlayPosition.rawValue, forKey: Constants.Defaults.overlayPosition)
         }
     }
 

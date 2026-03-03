@@ -30,7 +30,7 @@ final class HotkeyManager {
 
     /// Registers the global hotkey. Call after permissions are granted.
     func register() {
-        logger.info("Registering hotkey (mode: \(self.appState.hotkeyMode.rawValue))")
+        logger.info("Registering hotkey")
         setupHandlers()
     }
 
@@ -49,27 +49,19 @@ final class HotkeyManager {
     // MARK: - Private
 
     private func setupHandlers() {
-        switch appState.hotkeyMode {
-        case .holdToTalk:
-            KeyboardShortcuts.onKeyDown(for: .dictate) { [weak self] in
-                Task { @MainActor in
-                    self?.handleHoldKeyDown()
-                }
+        // Hold-to-talk mode (default until dual keybinds in Phase B)
+        KeyboardShortcuts.onKeyDown(for: .dictate) { [weak self] in
+            Task { @MainActor in
+                self?.handleHoldKeyDown()
             }
-            KeyboardShortcuts.onKeyUp(for: .dictate) { [weak self] in
-                Task { @MainActor in
-                    self?.handleHoldKeyUp()
-                }
-            }
-        case .toggle:
-            KeyboardShortcuts.onKeyDown(for: .dictate) { [weak self] in
-                Task { @MainActor in
-                    self?.handleToggle()
-                }
+        }
+        KeyboardShortcuts.onKeyUp(for: .dictate) { [weak self] in
+            Task { @MainActor in
+                self?.handleHoldKeyUp()
             }
         }
 
-        logger.info("Hotkey handlers set up for mode: \(self.appState.hotkeyMode.rawValue)")
+        logger.info("Hotkey handlers set up")
     }
 
     private func handleHoldKeyDown() {

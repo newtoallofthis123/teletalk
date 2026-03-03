@@ -14,17 +14,29 @@ enum Constants {
     // MARK: - UserDefaults Keys
 
     enum Defaults {
-        static let hotkeyMode = "hotkeyMode" // "holdToTalk" or "toggle"
         static let hasCompletedSetup = "hasCompletedSetup"
+        // Hotkeys
+        static let toggleShortcutEnabled = "toggleShortcutEnabled"
+        static let holdShortcutEnabled = "holdShortcutEnabled"
+        // Audio
         static let selectedAudioDeviceUID = "selectedAudioDeviceUID"
+        static let maxRecordingDuration = "maxRecordingDuration"
+        static let minRecordingDuration = "minRecordingDuration"
+        // Models
+        static let selectedModelVersion = "selectedModelVersion"
+        // General
+        static let insertionMethod = "insertionMethod"
+        static let showOverlay = "showOverlay"
+        static let overlayPosition = "overlayPosition"
     }
 
     // MARK: - Audio
 
     enum Audio {
         static let sampleRate: Double = 16_000
-        static let minimumRecordingDuration: TimeInterval = 0.2 // seconds
-        static let maximumRecordingDuration: TimeInterval = 120 // 2 minutes
+        // TODO: Phase G — rewire AudioRecorder to read from AppState, then remove these
+        static let minimumRecordingDuration: TimeInterval = 0.2
+        static let maximumRecordingDuration: TimeInterval = 120
     }
 
     // MARK: - UI

@@ -30,13 +30,6 @@ struct GeneralSettingsView: View {
         Form {
             Section("Hotkey") {
                 KeyboardShortcuts.Recorder("Shortcut:", name: .dictate)
-
-                Picker("Mode", selection: $state.hotkeyMode) {
-                    ForEach(AppState.HotkeyMode.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
             }
 
             Section("General") {
