@@ -1,3 +1,4 @@
+import CoreAudio
 import KeyboardShortcuts
 import SwiftUI
 
@@ -54,10 +55,67 @@ struct MenuBarView: View {
 
         Divider()
 
-        // Context info
+        // Model picker
         let activeModel = modelManager.availableModels.first(where: { $0.status == .active })
-        Button("Model: \(activeModel?.displayName ?? "None")") {}
-        Button("Input: \(selectedDeviceName)") {}
+        Menu("Model: \(activeModel?.displayName ?? "None")") {
+            ForEach(modelManager.availableModels) { model in
+                Button {
+                    Task {
+                        _ = try? await modelManager.switchActiveModel(to: model.version, appState: appState)
+                    }
+                } label: {
+                    HStack {
+                        if model.status == .active {
+                            Image(systemName: "checkmark")
+                        }
+                        switch model.status {
+                        case .notDownloaded:
+                            Text("\(model.displayName) (Not Downloaded)")
+                        case .downloading:
+                            Text("\(model.displayName) (Downloading…)")
+                        default:
+                            Text(model.displayName)
+                        }
+                    }
+                }
+                .disabled(
+                    model.status == .notDownloaded
+                        || model.status == .downloading
+                        || model.status == .active
+                        || appState.recordingState != .idle
+                )
+            }
+        }
+
+        // Input device picker
+        Menu("Input: \(selectedDeviceName)") {
+            Button {
+                appState.selectedAudioDeviceUID = nil
+            } label: {
+                HStack {
+                    if appState.selectedAudioDeviceUID == nil {
+                        Image(systemName: "checkmark")
+                    }
+                    Text("System Default")
+                }
+            }
+
+            Divider()
+
+            ForEach(audioDeviceEnumerator.inputDevices) { device in
+                Button {
+                    appState.selectedAudioDeviceUID = device.uid
+                } label: {
+                    HStack {
+                        if appState.selectedAudioDeviceUID == device.uid {
+                            Image(systemName: "checkmark")
+                        }
+                        Image(systemName: deviceIcon(transport: device.transportType))
+                        Text(device.name)
+                    }
+                }
+            }
+        }
 
         Divider()
 
@@ -98,6 +156,16 @@ struct MenuBarView: View {
             return device.name
         }
         return "System Default"
+    }
+
+    private func deviceIcon(transport: UInt32) -> String {
+        switch transport {
+        case kAudioDeviceTransportTypeBuiltIn: return "laptopcomputer"
+        case kAudioDeviceTransportTypeUSB: return "cable.connector"
+        case kAudioDeviceTransportTypeBluetooth, kAudioDeviceTransportTypeBluetoothLE: return "headphones"
+        case kAudioDeviceTransportTypeAggregate: return "circle.grid.2x2"
+        default: return "mic"
+        }
     }
 
     private var statusIcon: String {

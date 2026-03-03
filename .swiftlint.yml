@@ -1,3 +1,6 @@
+excluded:
+  - build
+
 disabled_rules:
   - opening_brace # Conflicts with swiftformat's wrapMultilineStatementBraces
   - trailing_comma # Project convention: keep trailing commas in collections
