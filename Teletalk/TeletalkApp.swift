@@ -11,7 +11,7 @@ struct TeletalkApp: App {
                 .environment(appDelegate.modelManager)
                 .environment(appDelegate.audioDeviceEnumerator)
         }
-        .menuBarExtraStyle(.window)
+        .menuBarExtraStyle(.menu)
 
         Settings {
             SettingsView()

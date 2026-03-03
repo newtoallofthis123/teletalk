@@ -8,104 +8,44 @@ struct MenuBarView: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Status header
-            HStack {
-                Image(systemName: statusIcon)
-                    .foregroundStyle(statusColor)
-                    .symbolEffect(.pulse, isActive: appState.recordingState == .listening)
-                Text("TeleTalk")
-                    .fontWeight(.medium)
-                Spacer()
-                Text(appState.statusText)
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 6)
-
-            Divider()
-
-            // Active keybinds
-            VStack(alignment: .leading, spacing: 4) {
-                if appState.toggleShortcutEnabled, let shortcut = KeyboardShortcuts.getShortcut(for: .dictateToggle) {
-                    keybindRow(shortcut: shortcut, label: "Toggle")
-                }
-                if appState.holdShortcutEnabled, let shortcut = KeyboardShortcuts.getShortcut(for: .dictateHold) {
-                    keybindRow(shortcut: shortcut, label: "Hold to Talk")
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-
-            Divider()
-
-            // Context info
-            VStack(alignment: .leading, spacing: 2) {
-                let activeModel = modelManager.availableModels.first(where: { $0.status == .active })
-                Text("Model: \(activeModel?.displayName ?? "None")")
-                Text("Input: \(selectedDeviceName)")
-            }
-            .foregroundStyle(.secondary)
-            .font(.caption)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-
-            Divider()
-
-            // Actions
-            VStack(spacing: 2) {
-                Button {
-                    openSettings()
-                } label: {
-                    HStack {
-                        Text("Settings...")
-                        Spacer()
-                        Text("⌘,")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                    }
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-
-                Button {
-                    NSApplication.shared.terminate(nil)
-                } label: {
-                    HStack {
-                        Text("Quit TeleTalk")
-                        Spacer()
-                        Text("⌘Q")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                    }
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-            }
-            .padding(.vertical, 4)
+        // Status header
+        Button {
+            // Info-only row
+        } label: {
+            Label("TeleTalk — \(appState.statusText)", systemImage: statusIcon)
         }
-        .frame(width: 240)
-        .task {
-            appState.refreshPermissions()
+
+        Divider()
+
+        // Active keybinds
+        if appState.toggleShortcutEnabled, let shortcut = KeyboardShortcuts.getShortcut(for: .dictateToggle) {
+            Button("\(shortcut.description)  Toggle") {}
         }
+        if appState.holdShortcutEnabled, let shortcut = KeyboardShortcuts.getShortcut(for: .dictateHold) {
+            Button("\(shortcut.description)  Hold to Talk") {}
+        }
+
+        Divider()
+
+        // Context info
+        let activeModel = modelManager.availableModels.first(where: { $0.status == .active })
+        Button("Model: \(activeModel?.displayName ?? "None")") {}
+        Button("Input: \(selectedDeviceName)") {}
+
+        Divider()
+
+        Button("Settings...") {
+            openSettings()
+        }
+        .keyboardShortcut(",")
+
+        Button("Quit TeleTalk") {
+            NSApplication.shared.terminate(nil)
+        }
+        .keyboardShortcut("q")
     }
 
     // MARK: - Helpers
-
-    private func keybindRow(shortcut: KeyboardShortcuts.Shortcut, label: String) -> some View {
-        HStack {
-            Text(shortcut.description)
-                .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.secondary)
-            Spacer()
-            Text(label)
-                .font(.caption)
-        }
-    }
 
     private var selectedDeviceName: String {
         if let uid = appState.selectedAudioDeviceUID,
