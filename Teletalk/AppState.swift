@@ -101,4 +101,19 @@ final class AppState {
     func refreshPermissions() {
         Permissions.refreshAll(into: self)
     }
+
+    /// Requests missing permissions on launch. Shows system prompts for mic and accessibility.
+    func requestPermissionsOnLaunch() async {
+        // Microphone — system dialog
+        if permissions.microphone != .granted {
+            permissions.microphone = await Permissions.requestMicrophone()
+        }
+        // Accessibility — system prompt to open Settings
+        if permissions.accessibility != .granted {
+            Permissions.requestAccessibility()
+            // Re-check after a short delay (user may have granted it)
+            try? await Task.sleep(for: .seconds(1))
+            permissions.accessibility = Permissions.accessibilityStatus()
+        }
+    }
 }
