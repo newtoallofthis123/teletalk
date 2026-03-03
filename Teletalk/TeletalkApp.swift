@@ -5,7 +5,7 @@ struct TeletalkApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("TeleTalk", systemImage: "mic.fill") {
+        MenuBarExtra("TeleTalk", image: "MenuBarIcon") {
             MenuBarView()
                 .environment(appDelegate.appState)
                 .environment(appDelegate.modelManager)

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" width="200" alt="TeleTalk icon">
+</p>
+
 # TeleTalk
 
 Local, privacy-first dictation for macOS. Hold a hotkey, speak, release — transcribed text appears at your cursor. Fully offline, no subscriptions, no cloud.
