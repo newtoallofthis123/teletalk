@@ -1,5 +1,6 @@
 import Cocoa
 import os
+import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let appState = AppState()
@@ -10,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let textInserter = TextInserter()
     private var overlayWindow: OverlayWindow?
     private var hotkeyManager: HotkeyManager?
+    private var setupWindow: NSWindow?
 
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "AppDelegate")
 
@@ -29,7 +31,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
 
             setupHotkey()
+
+            // Show first-run setup if not completed
+            if !UserDefaults.standard.bool(forKey: Constants.Defaults.hasCompletedSetup) {
+                showSetupWindow()
+            }
         }
+    }
+
+    private func showSetupWindow() {
+        let setupView = SetupView()
+            .environment(appState)
+
+        let hostingView = NSHostingView(rootView: setupView)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "TeleTalk Setup"
+        window.contentView = hostingView
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        // Keep a reference so the window isn't deallocated
+        setupWindow = window
     }
 
     // MARK: - Pipeline

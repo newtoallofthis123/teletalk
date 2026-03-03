@@ -50,6 +50,13 @@ final class AppState {
     enum HotkeyMode: String, CaseIterable {
         case holdToTalk
         case toggle
+
+        var displayName: String {
+            switch self {
+            case .holdToTalk: return "Hold to Talk"
+            case .toggle: return "Toggle"
+            }
+        }
     }
 
     var hotkeyMode: HotkeyMode = {
