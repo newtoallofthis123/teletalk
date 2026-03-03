@@ -1,4 +1,5 @@
 import Cocoa
+import FluidAudio
 import os
 import SwiftUI
 
@@ -12,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let audioRecorder = AudioRecorder()
     let audioDeviceEnumerator = AudioDeviceEnumerator()
     private let transcriptionEngine = TranscriptionEngine()
+    private let diarizationEngine = DiarizationEngine()
     private let textInserter = TextInserter()
     private var overlayWindow: OverlayWindow?
     private var hotkeyManager: HotkeyManager?
@@ -53,6 +55,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Load emoji dictionary if enabled
             if appState.emojiExpansionEnabled {
                 await textShortcutManager.loadEmojiDictionaryIfNeeded()
+            }
+
+            // Prepare diarization models if enabled
+            if appState.diarizationEnabled {
+                await prepareDiarizationModels()
+            }
+
+            // Listen for diarization toggle
+            appState.onDiarizationEnabledChanged = { [weak self] in
+                guard let self else { return }
+                Task { @MainActor in
+                    if self.appState.diarizationEnabled {
+                        await self.prepareDiarizationModels()
+                    } else {
+                        self.diarizationEngine.teardown()
+                        self.appState.diarizationModelState = .idle
+                    }
+                }
             }
 
             // Listen for dictionary/alias changes
@@ -202,18 +222,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         pipelineTask = Task { @MainActor in
             do {
-                let text = try await transcriptionEngine.transcribe(samples: samples)
+                let asrResult = try await transcriptionEngine.transcribe(samples: samples)
 
                 guard !Task.isCancelled else { return }
 
-                guard let text, !text.isEmpty else {
+                guard let asrResult else {
                     logger.info("Nothing transcribed")
                     showError("Nothing heard")
                     return
                 }
 
+                // Speaker diarization (before AI enhancement)
+                var processedText = asrResult.text
+                var speakerSegments: [SpeakerSegment]?
+
+                if appState.diarizationEnabled, diarizationEngine.state == .ready {
+                    appState.recordingState = .diarizing
+                    do {
+                        let diarizationResult = try await diarizationEngine.process(audio: samples)
+                        guard !Task.isCancelled else { return }
+                        let attributed = formatSpeakerAttributedText(
+                            asrText: asrResult.text,
+                            tokenTimings: asrResult.tokenTimings,
+                            diarizationResult: diarizationResult
+                        )
+                        processedText = attributed.text
+                        speakerSegments = attributed.segments
+                    } catch {
+                        logger.warning("Diarization failed, using plain text: \(error.localizedDescription)")
+                    }
+                    appState.recordingState = .transcribing
+                }
+
                 // AI enhancement (before alias/emoji expansion)
-                var processedText = text
                 if #available(macOS 26, *),
                    let hotkeyManager, hotkeyManager.lastTriggerWasAI,
                    appState.aiEnhancementEnabled,
@@ -242,7 +283,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let entry = TranscriptionEntry(
                     text: processedText,
                     audioDurationSeconds: audioDuration,
-                    modelVersion: appState.selectedModelVersion
+                    modelVersion: appState.selectedModelVersion,
+                    speakerSegments: speakerSegments
                 )
                 transcriptionHistory.add(entry)
 
@@ -295,6 +337,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } catch {
             logger.error("Vocabulary configuration failed: \(error.localizedDescription)")
             appState.vocabularyState = .error(error.localizedDescription)
+        }
+    }
+
+    private func prepareDiarizationModels() async {
+        appState.diarizationModelState = .downloading
+        do {
+            try await diarizationEngine.prepareModels()
+            appState.diarizationModelState = .ready
+        } catch {
+            logger.error("Diarization model preparation failed: \(error.localizedDescription)")
+            appState.diarizationModelState = .error(error.localizedDescription)
         }
     }
 

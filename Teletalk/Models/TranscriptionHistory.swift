@@ -1,19 +1,33 @@
 import Foundation
 import os
 
+struct SpeakerSegment: Codable, Equatable {
+    let speaker: String
+    let text: String
+    let startTime: Float
+    let endTime: Float
+}
+
 struct TranscriptionEntry: Identifiable, Codable {
     let id: UUID
     let text: String
     let timestamp: Date
     let audioDurationSeconds: Double
     let modelVersion: String
+    let speakerSegments: [SpeakerSegment]?
 
-    init(text: String, audioDurationSeconds: Double, modelVersion: String) {
+    init(
+        text: String,
+        audioDurationSeconds: Double,
+        modelVersion: String,
+        speakerSegments: [SpeakerSegment]? = nil
+    ) {
         self.id = UUID()
         self.text = text
         self.timestamp = Date()
         self.audioDurationSeconds = audioDurationSeconds
         self.modelVersion = modelVersion
+        self.speakerSegments = speakerSegments
     }
 
     var wordCount: Int {

@@ -23,6 +23,7 @@ final class AppState {
         case idle
         case listening
         case transcribing
+        case diarizing
         case enhancing
         case inserting
         case error(String)
@@ -218,6 +219,28 @@ final class AppState {
         }
     }
 
+    // MARK: - Diarization Settings
+
+    enum DiarizationModelState: Equatable {
+        case idle
+        case downloading
+        case ready
+        case error(String)
+    }
+
+    var diarizationModelState: DiarizationModelState = .idle
+
+    var onDiarizationEnabledChanged: (() -> Void)?
+
+    var diarizationEnabled: Bool = UserDefaults.standard
+        .object(forKey: Constants.Defaults.diarizationEnabled) as? Bool ?? false
+    {
+        didSet {
+            UserDefaults.standard.set(diarizationEnabled, forKey: Constants.Defaults.diarizationEnabled)
+            onDiarizationEnabledChanged?()
+        }
+    }
+
     // MARK: - AI Enhancement Settings
 
     var aiEnhancementEnabled: Bool = UserDefaults.standard
@@ -262,6 +285,9 @@ final class AppState {
         if vocabularyState == .downloading {
             return "Downloading CTC model…"
         }
+        if diarizationModelState == .downloading {
+            return "Downloading diarization models…"
+        }
         switch recordingState {
         case .idle:
             return "Ready"
@@ -269,6 +295,8 @@ final class AppState {
             return "Listening…"
         case .transcribing:
             return "Transcribing…"
+        case .diarizing:
+            return "Identifying speakers…"
         case .enhancing:
             return "Enhancing…"
         case .inserting:

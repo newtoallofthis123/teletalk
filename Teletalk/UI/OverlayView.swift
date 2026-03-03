@@ -19,6 +19,11 @@ struct OverlayView: View {
                     BouncingDots()
                     Text("Transcribing")
                 }
+            case .diarizing:
+                pillContent(tint: .orange) {
+                    BouncingDots()
+                    Text("Identifying Speakers")
+                }
             case .enhancing:
                 pillContent(tint: .purple) {
                     BouncingDots()
