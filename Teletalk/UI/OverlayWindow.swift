@@ -17,14 +17,12 @@ final class OverlayWindow {
 
     func show() {
         guard appState.showOverlay else { return }
-        if panel == nil { createPanel() }
 
-        // Force SwiftUI to re-evaluate by resetting the root view (fixes re-show bug)
-        if let hostingView = panel?.contentView as? NSHostingView<OverlayView> {
-            hostingView.rootView = OverlayView(appState: appState)
-        }
-
-        positionPanel(panel!)
+        // Recreate panel every time to guarantee fresh SwiftUI observation tracking.
+        // Reusing a panel after orderOut breaks @Observable updates.
+        panel?.orderOut(nil)
+        panel = nil
+        createPanel()
 
         // Entrance animation: start transparent and offset, animate in
         let slideOffset: CGFloat = slideDirection()
@@ -57,7 +55,7 @@ final class OverlayWindow {
             panel.animator().setFrameOrigin(origin)
         }, completionHandler: { [weak self] in
             self?.panel?.orderOut(nil)
-            self?.panel?.alphaValue = 1
+            self?.panel = nil
         })
     }
 
