@@ -23,7 +23,6 @@ struct MenuBarView: View {
         .keyboardShortcut("q")
         .task {
             appState.refreshPermissions()
-            await appState.requestPermissionsOnLaunch()
         }
     }
 
