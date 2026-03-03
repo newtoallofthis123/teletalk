@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let modelManager = ModelManager()
     let transcriptionHistory = TranscriptionHistory()
     let personalDictionary = PersonalDictionary()
+    let textShortcutManager = TextShortcutManager()
 
     private let audioRecorder = AudioRecorder()
     let audioDeviceEnumerator = AudioDeviceEnumerator()
@@ -41,18 +42,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if appState.modelState == .ready, let models = modelManager.loadedModels {
                 try? await transcriptionEngine.initialize(models: models)
 
-                // Configure vocabulary boosting if dictionary has terms
-                if appState.dictionaryEnabled, !personalDictionary.terms.isEmpty {
-                    await configureVocabularyWithStatus(terms: personalDictionary.terms)
+                // Configure vocabulary boosting if dictionary has terms or aliases
+                let allTerms = mergedVocabularyTerms()
+                if appState.dictionaryEnabled, !allTerms.isEmpty {
+                    await configureVocabularyWithStatus(terms: allTerms)
                 }
             }
 
-            // Listen for dictionary changes
+            // Load emoji dictionary if enabled
+            if appState.emojiExpansionEnabled {
+                await textShortcutManager.loadEmojiDictionaryIfNeeded()
+            }
+
+            // Listen for dictionary/alias changes
             let reconfigureVocabulary: () -> Void = { [weak self] in
                 guard let self else { return }
                 Task { @MainActor in
-                    if self.appState.dictionaryEnabled, !self.personalDictionary.terms.isEmpty {
-                        await self.configureVocabularyWithStatus(terms: self.personalDictionary.terms)
+                    let allTerms = self.mergedVocabularyTerms()
+                    if self.appState.dictionaryEnabled, !allTerms.isEmpty {
+                        await self.configureVocabularyWithStatus(terms: allTerms)
                     } else {
                         self.transcriptionEngine.disableVocabulary()
                         self.appState.vocabularyState = .idle
@@ -61,6 +69,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             personalDictionary.onTermsChanged = reconfigureVocabulary
             appState.onDictionaryEnabledChanged = reconfigureVocabulary
+            textShortcutManager.onAliasesChanged = reconfigureVocabulary
 
             setupHotkey()
             startPermissionMonitoring()
@@ -198,12 +207,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
 
+                // Post-process transcription
+                var processedText = text
+                if appState.aliasExpansionEnabled {
+                    processedText = textShortcutManager.expandAliases(in: processedText)
+                }
+                if appState.emojiExpansionEnabled {
+                    processedText = textShortcutManager.expandEmoji(in: processedText)
+                }
+
                 appState.recordingState = .inserting
-                await textInserter.insert(text: text, method: appState.insertionMethod)
+                await textInserter.insert(text: processedText, method: appState.insertionMethod)
 
                 let audioDuration = Double(sampleCount) / Constants.Audio.sampleRate
                 let entry = TranscriptionEntry(
-                    text: text,
+                    text: processedText,
                     audioDurationSeconds: audioDuration,
                     modelVersion: appState.selectedModelVersion
                 )
@@ -237,6 +255,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appState.recordingState = .idle
         appState.audioLevel = 0
         overlayWindow?.hide()
+    }
+
+    /// Merges PersonalDictionary terms with alias triggers so Parakeet recognizes alias words.
+    private func mergedVocabularyTerms() -> [DictionaryTerm] {
+        var terms = personalDictionary.terms
+        if appState.aliasExpansionEnabled {
+            for alias in textShortcutManager.aliases {
+                terms.append(DictionaryTerm(text: alias.trigger))
+            }
+        }
+        return terms
     }
 
     private func configureVocabularyWithStatus(terms: [DictionaryTerm]) async {

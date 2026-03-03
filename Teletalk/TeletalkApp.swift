@@ -21,6 +21,7 @@ struct TeletalkApp: App {
                 .environment(appDelegate.audioDeviceEnumerator)
                 .environment(appDelegate.transcriptionHistory)
                 .environment(appDelegate.personalDictionary)
+                .environment(appDelegate.textShortcutManager)
         }
         .defaultSize(width: 500, height: 450)
         .windowResizability(.contentSize)

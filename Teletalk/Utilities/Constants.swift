@@ -30,6 +30,8 @@ enum Constants {
         static let overlayPosition = "overlayPosition"
         static let audioFeedbackEnabled = "audioFeedbackEnabled"
         static let dictionaryEnabled = "dictionaryEnabled"
+        static let aliasExpansionEnabled = "aliasExpansionEnabled"
+        static let emojiExpansionEnabled = "emojiExpansionEnabled"
     }
 
     // MARK: - History
@@ -43,6 +45,14 @@ enum Constants {
 
     enum Dictionary {
         static let fileName = "dictionary.json"
+    }
+
+    // MARK: - Text Shortcuts
+
+    enum TextShortcuts {
+        static let aliasFileName = "aliases.json"
+        static let emojiFileName = "emoji-overrides.json"
+        static let emojiSourceURL = "https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json"
     }
 
     // MARK: - Audio

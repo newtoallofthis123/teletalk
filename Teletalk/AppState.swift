@@ -199,6 +199,24 @@ final class AppState {
         }
     }
 
+    // MARK: - Text Shortcut Settings
+
+    var aliasExpansionEnabled: Bool = UserDefaults.standard
+        .object(forKey: Constants.Defaults.aliasExpansionEnabled) as? Bool ?? true
+    {
+        didSet {
+            UserDefaults.standard.set(aliasExpansionEnabled, forKey: Constants.Defaults.aliasExpansionEnabled)
+        }
+    }
+
+    var emojiExpansionEnabled: Bool = UserDefaults.standard
+        .object(forKey: Constants.Defaults.emojiExpansionEnabled) as? Bool ?? true
+    {
+        didSet {
+            UserDefaults.standard.set(emojiExpansionEnabled, forKey: Constants.Defaults.emojiExpansionEnabled)
+        }
+    }
+
     // MARK: - Computed
 
     /// Human-readable status for the menu bar.

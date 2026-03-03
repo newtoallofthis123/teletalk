@@ -13,6 +13,7 @@ struct SettingsView: View {
         case audio = "Audio"
         case models = "Models"
         case dictionary = "Dictionary"
+        case shortcuts = "Shortcuts"
         case general = "General"
         case history = "History"
         case permissions = "Permissions"
@@ -23,6 +24,7 @@ struct SettingsView: View {
             case .audio: return "waveform"
             case .models: return "brain"
             case .dictionary: return "character.book.closed"
+            case .shortcuts: return "text.badge.plus"
             case .general: return "gear"
             case .history: return "clock.arrow.circlepath"
             case .permissions: return "lock.shield"
@@ -44,6 +46,7 @@ struct SettingsView: View {
             case .audio: AudioSettingsView()
             case .models: ModelsSettingsView()
             case .dictionary: DictionarySettingsView()
+            case .shortcuts: TextShortcutsSettingsView()
             case .general: GeneralSettingsView()
             case .history: HistorySettingsView()
             case .permissions: PermissionsSettingsView()
@@ -602,22 +605,80 @@ struct DictionarySettingsView: View {
 struct DictionaryTermRow: View {
     let term: DictionaryTerm
     @Environment(PersonalDictionary.self) private var dictionary
+    @State private var showingEdit = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(term.text)
-                .fontWeight(.medium)
-            if !term.aliases.isEmpty {
-                Text("Aliases: \(term.aliases.joined(separator: ", "))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(term.text)
+                    .fontWeight(.medium)
+                if !term.aliases.isEmpty {
+                    Text("Aliases: \(term.aliases.joined(separator: ", "))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Button { showingEdit = true } label: {
+                Image(systemName: "pencil")
+            }
+            .buttonStyle(.borderless)
+            Button(role: .destructive) { dictionary.delete(term) } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+        }
+        .sheet(isPresented: $showingEdit) {
+            EditTermSheet(term: term)
+        }
+    }
+}
+
+struct EditTermSheet: View {
+    let term: DictionaryTerm
+    @Environment(PersonalDictionary.self) private var dictionary
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+    @State private var aliasesText: String
+
+    init(term: DictionaryTerm) {
+        self.term = term
+        _text = State(initialValue: term.text)
+        _aliasesText = State(initialValue: term.aliases.joined(separator: ", "))
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Edit Term")
+                .font(.headline)
+
+            TextField("Term", text: $text)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("Aliases, comma-separated (optional)", text: $aliasesText)
+                .textFieldStyle(.roundedBorder)
+
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Save") {
+                    let aliases = aliasesText
+                        .split(separator: ",")
+                        .map { $0.trimmingCharacters(in: .whitespaces) }
+                        .filter { !$0.isEmpty }
+                    var updated = term
+                    updated.text = text
+                    updated.aliases = aliases
+                    dictionary.update(updated)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-        .contextMenu {
-            Button("Delete", role: .destructive) {
-                dictionary.delete(term)
-            }
-        }
+        .padding()
+        .frame(width: 350)
     }
 }
 
@@ -660,6 +721,202 @@ struct AddTermSheet: View {
         }
         .padding()
         .frame(width: 350)
+    }
+}
+
+// MARK: - Text Shortcuts Tab
+
+struct TextShortcutsSettingsView: View {
+    @Environment(AppState.self) private var appState
+    @Environment(TextShortcutManager.self) private var shortcuts
+    @State private var showingAddAlias = false
+
+    var body: some View {
+        @Bindable var state = appState
+
+        Form {
+            Section {
+                Toggle("Enable Alias Expansion", isOn: $state.aliasExpansionEnabled)
+
+                if shortcuts.aliases.isEmpty {
+                    Text("No aliases defined yet.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(shortcuts.aliases) { alias in
+                        AliasRow(alias: alias)
+                    }
+                }
+
+                Button("Add Alias…") {
+                    showingAddAlias = true
+                }
+            } header: {
+                Label("Aliases", systemImage: "arrow.right.arrow.left")
+                    .foregroundStyle(.secondary)
+            } footer: {
+                Text(
+                    "Aliases replace exact words in transcription output. " +
+                        "E.g. \"auq\" → \"you are allowed to ask me any questions\""
+                )
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            }
+
+            Section {
+                Toggle("Enable Emoji Expansion", isOn: $state.emojiExpansionEnabled)
+                    .onChange(of: appState.emojiExpansionEnabled) { _, enabled in
+                        if enabled {
+                            Task { await shortcuts.loadEmojiDictionaryIfNeeded() }
+                        }
+                    }
+
+                if shortcuts.emojiLoading {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Downloading emoji dictionary…")
+                            .foregroundStyle(.secondary)
+                    }
+                } else if shortcuts.emojiLoaded {
+                    Label(
+                        "\(shortcuts.emojiDictionary.count) emoji loaded",
+                        systemImage: "checkmark.circle.fill"
+                    )
+                    .foregroundStyle(.green)
+                    .font(.caption)
+                }
+
+                Text("Say \"emoji\" followed by a keyword to insert an emoji. E.g. \"emoji fire\" → 🔥")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let cacheURL = shortcuts.emojiCacheURL {
+                    Button("Browse Emoji Keywords…") {
+                        NSWorkspace.shared.open(cacheURL)
+                    }
+                }
+            } header: {
+                Label("Emoji", systemImage: "face.smiling")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .sheet(isPresented: $showingAddAlias) {
+            AddAliasSheet()
+        }
+    }
+}
+
+struct AliasRow: View {
+    let alias: TextAlias
+    @Environment(TextShortcutManager.self) private var shortcuts
+    @State private var showingEdit = false
+
+    var body: some View {
+        HStack {
+            Text(alias.trigger)
+                .fontWeight(.medium)
+                .font(.body.monospaced())
+            Image(systemName: "arrow.right")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+            Text(alias.expansion)
+                .lineLimit(1)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button { showingEdit = true } label: {
+                Image(systemName: "pencil")
+            }
+            .buttonStyle(.borderless)
+            Button(role: .destructive) { shortcuts.deleteAlias(alias) } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+        }
+        .sheet(isPresented: $showingEdit) {
+            EditAliasSheet(alias: alias)
+        }
+    }
+}
+
+struct EditAliasSheet: View {
+    let alias: TextAlias
+    @Environment(TextShortcutManager.self) private var shortcuts
+    @Environment(\.dismiss) private var dismiss
+    @State private var trigger: String
+    @State private var expansion: String
+
+    init(alias: TextAlias) {
+        self.alias = alias
+        _trigger = State(initialValue: alias.trigger)
+        _expansion = State(initialValue: alias.expansion)
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Edit Alias")
+                .font(.headline)
+
+            TextField("Trigger word", text: $trigger)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("Expands to…", text: $expansion)
+                .textFieldStyle(.roundedBorder)
+
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Save") {
+                    var updated = alias
+                    updated.trigger = trigger.trimmingCharacters(in: .whitespaces)
+                    updated.expansion = expansion
+                    shortcuts.updateAlias(updated)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(trigger.trimmingCharacters(in: .whitespaces).isEmpty || expansion.isEmpty)
+            }
+        }
+        .padding()
+        .frame(width: 400)
+    }
+}
+
+struct AddAliasSheet: View {
+    @Environment(TextShortcutManager.self) private var shortcuts
+    @Environment(\.dismiss) private var dismiss
+    @State private var trigger = ""
+    @State private var expansion = ""
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Add Alias")
+                .font(.headline)
+
+            TextField("Trigger word (e.g. auq)", text: $trigger)
+                .textFieldStyle(.roundedBorder)
+
+            TextField("Expands to…", text: $expansion)
+                .textFieldStyle(.roundedBorder)
+
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Add") {
+                    shortcuts.addAlias(TextAlias(
+                        trigger: trigger.trimmingCharacters(in: .whitespaces),
+                        expansion: expansion
+                    ))
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(trigger.trimmingCharacters(in: .whitespaces).isEmpty || expansion.isEmpty)
+            }
+        }
+        .padding()
+        .frame(width: 400)
     }
 }
 
