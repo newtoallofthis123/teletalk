@@ -117,12 +117,15 @@ final class TextShortcutManager {
         guard !aliases.isEmpty else { return text }
         var result = text
         for alias in aliases {
-            let pattern = "\\b\(NSRegularExpression.escapedPattern(for: alias.trigger))\\b"
+            let consumeTrailingSpace = alias.expansion.hasSuffix("\\")
+            let expansion = consumeTrailingSpace ? String(alias.expansion.dropLast()) : alias.expansion
+            let escaped = NSRegularExpression.escapedPattern(for: alias.trigger)
+            let pattern = consumeTrailingSpace ? "\\b\(escaped)\\b\\s?" : "\\b\(escaped)\\b"
             if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
                 result = regex.stringByReplacingMatches(
                     in: result,
                     range: NSRange(result.startIndex..., in: result),
-                    withTemplate: alias.expansion
+                    withTemplate: expansion
                 )
             }
         }
