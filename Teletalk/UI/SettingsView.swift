@@ -510,11 +510,9 @@ struct HistoryEntryRow: View {
                 .lineLimit(3)
 
             HStack(spacing: 8) {
-                Text(entry.timestamp, style: .relative)
+                Text(entry.timestamp, format: .relative(presentation: .named))
                 Text("·")
                 Text("\(entry.wordCount) words")
-                Text("·")
-                Text(String(format: "%.1fs", entry.audioDurationSeconds))
             }
             .font(.caption)
             .foregroundStyle(.tertiary)

@@ -6,7 +6,7 @@ struct MenuBarView: View {
     @Environment(ModelManager.self) private var modelManager
     @Environment(AudioDeviceEnumerator.self) private var audioDeviceEnumerator
     @Environment(TranscriptionHistory.self) private var history
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         // Status header
@@ -36,13 +36,8 @@ struct MenuBarView: View {
                 Button {
                     pasteText(entry.text)
                 } label: {
-                    Label {
-                        Text(entry.text)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    } icon: {
-                        Image(systemName: "text.quote")
-                    }
+                    let preview = entry.text.prefix(50) + (entry.text.count > 50 ? "…" : "")
+                    Label(preview, systemImage: "text.quote")
                 }
             }
 
@@ -67,7 +62,10 @@ struct MenuBarView: View {
         Divider()
 
         Button("Settings...") {
-            openSettings()
+            if let appDelegate = NSApp.delegate as? AppDelegate {
+                appDelegate.showSettingsWindow()
+            }
+            openWindow(id: "settings")
         }
         .keyboardShortcut(",")
 
