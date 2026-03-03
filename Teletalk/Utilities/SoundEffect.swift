@@ -7,9 +7,12 @@ enum SoundEffect {
     func play() {
         switch self {
         case .startRecording:
-            NSSound(named: "Tink")?.play()
+            let url = URL(fileURLWithPath: "/System/Library/PrivateFrameworks/AssistantServices.framework/Versions/A/Resources/dt-begin.caf")
+            (NSSound(contentsOf: url, byReference: true) ?? NSSound(named: "Pop"))?.play()
         case .stopRecording:
-            NSSound(named: "Pop")?.play()
+            let url = URL(fileURLWithPath: "/System/Library/PrivateFrameworks/AssistantServices.framework/Versions/A/Resources/dt-confirm.caf")
+            (NSSound(contentsOf: url, byReference: true) ?? NSSound(named: "Tink"))?.play()
         }
     }
 }
+
