@@ -39,7 +39,7 @@ enum Constants {
     // MARK: - UI
 
     enum UI {
-        static let overlayFadeOutDuration: TimeInterval = 0.3
+        static let overlayFadeOutDuration: TimeInterval = 0.6
         static let errorDisplayDuration: TimeInterval = 2.0
         static let overlayBottomOffset: CGFloat = 100
     }
