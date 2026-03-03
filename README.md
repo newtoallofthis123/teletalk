@@ -18,6 +18,20 @@ TeleTalk is a macOS menu bar app for offline voice dictation, powered by NVIDIA'
 - **Two hotkey modes** — toggle (press to start, press to stop) and hold-to-talk (hold to record, release to transcribe)
 - **Escape to cancel** — hit Escape mid-recording or mid-transcription to abort
 
+### AI-Enhanced Dictation
+
+- **Apple Intelligence post-processing** — opt-in AI cleanup via macOS 26's FoundationModels framework removes filler words, fixes punctuation, and polishes grammar — all on-device
+- **Dedicated AI hotkey** — separate hotkey triggers the AI-enhanced pipeline (record → transcribe → AI cleanup → insert)
+- **Custom system prompt** — tailor the AI behavior from Settings (e.g. "formal tone", "fix spelling only")
+- **Requires macOS 26+** — gracefully hidden on older systems
+
+### Speaker Diarization
+
+- **Who said what** — identifies and labels speakers in multi-person recordings using FluidAudio's offline diarizer
+- **Token-level alignment** — aligns ASR word timings with speaker segments for accurate attribution
+- **Smart formatting** — single-speaker recordings insert plain text; multi-speaker recordings get `Speaker 1:` / `Speaker 2:` labels
+- **Toggle in Settings** — enable/disable from the Audio tab; diarization model downloads on first use
+
 ### Text Shortcuts
 
 - **Alias expansion** — define text macros that expand after transcription. Say "auq" and get "you are allowed to ask me any questions". Alias triggers are automatically registered with the ASR model's vocabulary boosting so it actually recognizes your made-up words
@@ -47,7 +61,7 @@ TeleTalk is a macOS menu bar app for offline voice dictation, powered by NVIDIA'
 
 ### Settings
 
-Eight tabs of configuration: Hotkeys, Audio, Models, Dictionary, Shortcuts, General, History, and Permissions. Launch at login, overlay positioning, insertion method selection, and more.
+Nine tabs of configuration: Hotkeys, Audio, Models, Dictionary, Shortcuts, AI, General, History, and Permissions. Launch at login, overlay positioning, insertion method selection, and more.
 
 ## Requirements
 
@@ -86,8 +100,10 @@ The transcription model (~600 MB) downloads automatically on first launch.
 1. **Hotkey** — global shortcut (Ctrl+Shift+Space or Ctrl+Shift+L) triggers recording
 2. **Audio capture** — AVAudioEngine records mic input, converts to 16kHz mono Float32 PCM
 3. **Transcription** — FluidAudio runs Parakeet TDT on the Apple Neural Engine, with optional CTC vocabulary boosting
-4. **Post-processing** — alias expansion and emoji insertion transform the raw transcript
-5. **Text insertion** — final text is inserted at cursor via the Accessibility API (clipboard paste as fallback)
+4. **Diarization** _(optional)_ — FluidAudio's offline diarizer identifies speakers and aligns them to ASR token timings
+5. **AI enhancement** _(optional)_ — Apple Intelligence cleans up filler words, punctuation, and grammar on-device
+6. **Post-processing** — alias expansion and emoji insertion transform the raw transcript
+7. **Text insertion** — final text is inserted at cursor via the Accessibility API (clipboard paste as fallback)
 6. **History** — the result is logged, and a floating overlay shows the status throughout
 
 ## License
