@@ -97,6 +97,14 @@ final class TextInserter {
             return false
         }
 
+        // Verify the value actually changed
+        var verifyValue: AnyObject?
+        AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &verifyValue)
+        guard let verifiedText = verifyValue as? String, verifiedText == newValue else {
+            logger.debug("AX set reported success but value didn't change")
+            return false
+        }
+
         // Move cursor to end of inserted text
         let newCursorPos = range.location + text.count
         var newRange = CFRange(location: newCursorPos, length: 0)
@@ -141,7 +149,17 @@ final class TextInserter {
             newValue as CFTypeRef
         )
 
-        return setResult == .success
+        guard setResult == .success else { return false }
+
+        // Verify the value actually changed
+        var verifyValue: AnyObject?
+        AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &verifyValue)
+        guard let verifiedText = verifyValue as? String, verifiedText == newValue else {
+            logger.debug("AX append reported success but value didn't change")
+            return false
+        }
+
+        return true
     }
 
     // MARK: - Clipboard Paste Fallback

@@ -13,10 +13,15 @@ final class AudioRecorder {
 
     private(set) var state: State = .idle
 
+    /// Called when recording is auto-stopped (max duration or mic disconnection).
+    var onAutoStop: (() -> Void)?
+
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "AudioRecorder")
     private let engine = AVAudioEngine()
     private var samples: [Float] = []
     private var recordingStartTime: Date?
+    private var maxDurationTask: Task<Void, Never>?
+    private var configObserver: Any?
 
     /// Starts recording from the default input device.
     /// Accumulates 16kHz mono Float32 samples into an internal buffer.
@@ -56,6 +61,17 @@ final class AudioRecorder {
         try engine.start()
         state = .recording
         logger.info("Recording started (input: \(inputFormat.sampleRate)Hz \(inputFormat.channelCount)ch)")
+
+        // Auto-stop after max duration
+        maxDurationTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(Constants.Audio.maximumRecordingDuration))
+            guard let self, self.state == .recording else { return }
+            self.logger.warning("Max recording duration reached, auto-stopping")
+            self.onAutoStop?()
+        }
+
+        // Watch for audio hardware changes (mic disconnect)
+        observeAudioConfigChanges()
     }
 
     /// Stops recording and returns accumulated samples.
@@ -65,6 +81,10 @@ final class AudioRecorder {
             logger.warning("stopRecording called while not recording")
             return nil
         }
+
+        maxDurationTask?.cancel()
+        maxDurationTask = nil
+        removeAudioConfigObserver()
 
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
@@ -127,11 +147,33 @@ final class AudioRecorder {
             self?.samples.append(contentsOf: newSamples)
         }
     }
+
+    private func observeAudioConfigChanges() {
+        configObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: engine,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.state == .recording else { return }
+                self.logger.warning("Audio configuration changed (mic disconnected?), auto-stopping")
+                self.onAutoStop?()
+            }
+        }
+    }
+
+    private func removeAudioConfigObserver() {
+        if let configObserver {
+            NotificationCenter.default.removeObserver(configObserver)
+            self.configObserver = nil
+        }
+    }
 }
 
 enum AudioRecorderError: LocalizedError {
     case formatCreationFailed
     case converterCreationFailed
+    case micDisconnected
 
     var errorDescription: String? {
         switch self {
@@ -139,6 +181,8 @@ enum AudioRecorderError: LocalizedError {
             return "Failed to create target audio format"
         case .converterCreationFailed:
             return "Failed to create audio format converter"
+        case .micDisconnected:
+            return "Microphone was disconnected"
         }
     }
 }

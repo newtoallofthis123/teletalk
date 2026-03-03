@@ -1,6 +1,6 @@
 import SwiftUI
-// TODO: import KeyboardShortcuts — uncomment when SPM dependency is added
-// TODO: import LaunchAtLogin — uncomment when SPM dependency is added
+import KeyboardShortcuts
+import LaunchAtLogin
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
@@ -29,12 +29,7 @@ struct GeneralSettingsView: View {
 
         Form {
             Section("Hotkey") {
-                // TODO: Uncomment when KeyboardShortcuts SPM dependency is added
-                // KeyboardShortcuts.Recorder("Shortcut:", name: .toggleRecording)
-
-                Text("Shortcut: Ctrl+Shift+Space")
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
+                KeyboardShortcuts.Recorder("Shortcut:", name: .dictate)
 
                 Picker("Mode", selection: $state.hotkeyMode) {
                     ForEach(AppState.HotkeyMode.allCases, id: \.self) { mode in
@@ -45,12 +40,7 @@ struct GeneralSettingsView: View {
             }
 
             Section("General") {
-                // TODO: Uncomment when LaunchAtLogin SPM dependency is added
-                // LaunchAtLogin.Toggle("Launch at login")
-
-                Toggle("Launch at login", isOn: .constant(false))
-                    .disabled(true)
-                    .help("Requires LaunchAtLogin package")
+                LaunchAtLogin.Toggle("Launch at login")
 
                 AudioDevicePicker()
             }

@@ -82,6 +82,9 @@ final class AppState {
         case .notDownloaded:
             return "Model not downloaded"
         case .downloading(let progress):
+            if progress < 0 {
+                return "Downloading model…"
+            }
             return "Downloading model… \(Int(progress * 100))%"
         case .error(let message):
             return "Error: \(message)"

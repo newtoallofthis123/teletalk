@@ -1,13 +1,10 @@
-import Foundation
+import AppKit
 import os
+import KeyboardShortcuts
 
-// NOTE: Uncomment KeyboardShortcuts import once SPM dependency is added in Xcode.
-// import KeyboardShortcuts
-
-// NOTE: Uncomment once KeyboardShortcuts is available.
-// extension KeyboardShortcuts.Name {
-//     static let dictate = Self("dictate", initial: .init(.space, modifiers: [.control, .shift]))
-// }
+extension KeyboardShortcuts.Name {
+    static let dictate = Self("dictate", default: .init(.space, modifiers: [.control, .shift]))
+}
 
 /// Manages global hotkey registration for hold-to-talk and toggle dictation modes.
 @MainActor
@@ -40,8 +37,7 @@ final class HotkeyManager {
     /// Unregisters the global hotkey.
     func unregister() {
         logger.info("Unregistering hotkey")
-        // TODO: Uncomment once KeyboardShortcuts is available.
-        // KeyboardShortcuts.disable(.dictate)
+        KeyboardShortcuts.disable(KeyboardShortcuts.Name.dictate)
     }
 
     /// Re-registers handlers when hotkey mode changes.
@@ -53,27 +49,25 @@ final class HotkeyManager {
     // MARK: - Private
 
     private func setupHandlers() {
-        // TODO: Uncomment once KeyboardShortcuts SPM dependency is added in Xcode.
-        //
-        // switch appState.hotkeyMode {
-        // case .holdToTalk:
-        //     KeyboardShortcuts.onKeyDown(for: .dictate) { [weak self] in
-        //         Task { @MainActor in
-        //             self?.handleHoldKeyDown()
-        //         }
-        //     }
-        //     KeyboardShortcuts.onKeyUp(for: .dictate) { [weak self] in
-        //         Task { @MainActor in
-        //             self?.handleHoldKeyUp()
-        //         }
-        //     }
-        // case .toggle:
-        //     KeyboardShortcuts.onKeyDown(for: .dictate) { [weak self] in
-        //         Task { @MainActor in
-        //             self?.handleToggle()
-        //         }
-        //     }
-        // }
+        switch appState.hotkeyMode {
+        case .holdToTalk:
+            KeyboardShortcuts.onKeyDown(for: .dictate) { [weak self] in
+                Task { @MainActor in
+                    self?.handleHoldKeyDown()
+                }
+            }
+            KeyboardShortcuts.onKeyUp(for: .dictate) { [weak self] in
+                Task { @MainActor in
+                    self?.handleHoldKeyUp()
+                }
+            }
+        case .toggle:
+            KeyboardShortcuts.onKeyDown(for: .dictate) { [weak self] in
+                Task { @MainActor in
+                    self?.handleToggle()
+                }
+            }
+        }
 
         logger.info("Hotkey handlers set up for mode: \(self.appState.hotkeyMode.rawValue)")
     }

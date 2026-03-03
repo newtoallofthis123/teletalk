@@ -19,6 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         overlayWindow = OverlayWindow(appState: appState)
 
+        audioRecorder.onAutoStop = { [weak self] in
+            self?.stopPipeline()
+        }
+
         Task { @MainActor in
             await appState.requestPermissionsOnLaunch()
 
@@ -26,17 +30,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 await modelManager.loadModel(appState: appState)
             }
 
-            if appState.modelState == .ready {
-                try? await transcriptionEngine.initialize()
+            if appState.modelState == .ready, let models = modelManager.loadedModels {
+                try? await transcriptionEngine.initialize(models: models)
             }
 
             setupHotkey()
+            startPermissionMonitoring()
 
             // Show first-run setup if not completed
             if !UserDefaults.standard.bool(forKey: Constants.Defaults.hasCompletedSetup) {
                 showSetupWindow()
             }
         }
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        appState.refreshPermissions()
     }
 
     private func showSetupWindow() {
@@ -58,6 +67,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Keep a reference so the window isn't deallocated
         setupWindow = window
+    }
+
+    // MARK: - Permission Monitoring
+
+    /// Periodically checks if permissions were revoked while the app is running.
+    private func startPermissionMonitoring() {
+        Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(10))
+                let previousMic = appState.permissions.microphone
+                appState.refreshPermissions()
+
+                // If mic was revoked while recording, stop the pipeline
+                if previousMic == .granted && appState.permissions.microphone == .denied {
+                    logger.warning("Microphone permission revoked")
+                    if audioRecorder.state == .recording {
+                        stopPipeline()
+                    }
+                    showError("Mic permission revoked")
+                }
+            }
+        }
     }
 
     // MARK: - Pipeline
