@@ -16,6 +16,9 @@ final class HotkeyManager {
     private let appState: AppState
     private let onStartRecording: () -> Void
     private let onStopRecording: () -> Void
+    private let onCancel: () -> Void
+
+    private var escapeMonitor: Any?
 
     /// Timestamp when key was pressed (for hold-to-talk debounce).
     private var keyDownTime: ContinuousClock.Instant?
@@ -23,10 +26,11 @@ final class HotkeyManager {
     /// Minimum hold duration to count as intentional (not accidental tap).
     private let debounceThreshold: Duration = .milliseconds(200)
 
-    init(appState: AppState, onStartRecording: @escaping () -> Void, onStopRecording: @escaping () -> Void) {
+    init(appState: AppState, onStartRecording: @escaping () -> Void, onStopRecording: @escaping () -> Void, onCancel: @escaping () -> Void) {
         self.appState = appState
         self.onStartRecording = onStartRecording
         self.onStopRecording = onStopRecording
+        self.onCancel = onCancel
     }
 
     /// Registers both global hotkeys. Call after permissions are granted.
@@ -40,6 +44,10 @@ final class HotkeyManager {
         logger.info("Unregistering hotkeys")
         KeyboardShortcuts.disable(.dictateToggle)
         KeyboardShortcuts.disable(.dictateHold)
+        if let escapeMonitor {
+            NSEvent.removeMonitor(escapeMonitor)
+            self.escapeMonitor = nil
+        }
     }
 
     /// Re-registers handlers when enable states change.
@@ -68,6 +76,21 @@ final class HotkeyManager {
             KeyboardShortcuts.onKeyUp(for: .dictateHold) { [weak self] in
                 Task { @MainActor in
                     self?.handleHoldKeyUp()
+                }
+            }
+        }
+
+        // Escape key monitor for cancellation during active pipeline
+        escapeMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.keyCode == 53 else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                switch self.appState.recordingState {
+                case .listening, .transcribing:
+                    self.logger.info("Escape pressed — cancelling pipeline")
+                    self.onCancel()
+                default:
+                    break
                 }
             }
         }

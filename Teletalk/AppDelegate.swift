@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var overlayWindow: OverlayWindow?
     private var hotkeyManager: HotkeyManager?
     private var setupWindow: NSWindow?
+    private var pipelineTask: Task<Void, Never>?
 
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "AppDelegate")
 
@@ -101,7 +102,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager = HotkeyManager(
             appState: appState,
             onStartRecording: { [weak self] in self?.startPipeline() },
-            onStopRecording: { [weak self] in self?.stopPipeline() }
+            onStopRecording: { [weak self] in self?.stopPipeline() },
+            onCancel: { [weak self] in self?.cancelPipeline() }
         )
         hotkeyManager?.register()
     }
@@ -139,9 +141,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         appState.recordingState = .transcribing
 
-        Task { @MainActor in
+        pipelineTask = Task { @MainActor in
             do {
                 let text = try await transcriptionEngine.transcribe(samples: samples)
+
+                guard !Task.isCancelled else { return }
 
                 guard let text, !text.isEmpty else {
                     logger.info("Nothing transcribed")
@@ -152,6 +156,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 appState.recordingState = .inserting
                 await textInserter.insert(text: text, method: appState.insertionMethod)
 
+                guard !Task.isCancelled else { return }
+
                 // Brief "Done" display, then hide
                 try? await Task.sleep(for: .milliseconds(
                     Int(Constants.UI.overlayFadeOutDuration * 1000)
@@ -159,10 +165,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 appState.recordingState = .idle
                 overlayWindow?.hide()
             } catch {
+                if Task.isCancelled { return }
                 logger.error("Transcription failed: \(error.localizedDescription)")
                 showError(error.localizedDescription)
             }
         }
+    }
+
+    private func cancelPipeline() {
+        logger.info("Cancelling pipeline")
+        pipelineTask?.cancel()
+        pipelineTask = nil
+
+        if appState.recordingState == .listening {
+            _ = audioRecorder.stopRecording()
+        }
+
+        appState.recordingState = .idle
+        appState.audioLevel = 0
+        overlayWindow?.hide()
     }
 
     private func showError(_ message: String) {
