@@ -32,6 +32,9 @@ enum Constants {
         static let dictionaryEnabled = "dictionaryEnabled"
         static let aliasExpansionEnabled = "aliasExpansionEnabled"
         static let emojiExpansionEnabled = "emojiExpansionEnabled"
+        // AI Enhancement
+        static let aiEnhancementEnabled = "aiEnhancementEnabled"
+        static let aiSystemPrompt = "aiSystemPrompt"
     }
 
     // MARK: - History
@@ -53,6 +56,13 @@ enum Constants {
         static let aliasFileName = "aliases.json"
         static let emojiFileName = "emoji-overrides.json"
         static let emojiSourceURL = "https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json"
+    }
+
+    // MARK: - AI
+
+    enum AI {
+        static let defaultSystemPrompt =
+            "Remove filler words (um, uh, like, you know). Fix punctuation and capitalization. Output only the corrected text — no commentary, no quotation marks, no acknowledgments."
     }
 
     // MARK: - Audio

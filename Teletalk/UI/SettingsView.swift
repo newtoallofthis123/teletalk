@@ -14,6 +14,7 @@ struct SettingsView: View {
         case models = "Models"
         case dictionary = "Dictionary"
         case shortcuts = "Shortcuts"
+        case ai = "AI"
         case general = "General"
         case history = "History"
         case permissions = "Permissions"
@@ -25,18 +26,36 @@ struct SettingsView: View {
             case .models: return "brain"
             case .dictionary: return "character.book.closed"
             case .shortcuts: return "text.badge.plus"
+            case .ai: return "sparkles"
             case .general: return "gear"
             case .history: return "clock.arrow.circlepath"
             case .permissions: return "lock.shield"
+            }
+        }
+
+        /// Whether this tab should be shown given current system capabilities.
+        var isVisible: Bool {
+            switch self {
+            case .ai:
+                if #available(macOS 26, *) {
+                    return AIPostProcessor.isAvailable
+                }
+                return false
+            default:
+                return true
             }
         }
     }
 
     @State private var selectedTab: Tab = .hotkeys
 
+    private var visibleTabs: [Tab] {
+        Tab.allCases.filter(\.isVisible)
+    }
+
     var body: some View {
         NavigationSplitView {
-            List(Tab.allCases, id: \.self, selection: $selectedTab) { tab in
+            List(visibleTabs, id: \.self, selection: $selectedTab) { tab in
                 Label(tab.rawValue, systemImage: tab.icon)
             }
             .navigationSplitViewColumnWidth(min: 140, ideal: 160)
@@ -47,6 +66,10 @@ struct SettingsView: View {
             case .models: ModelsSettingsView()
             case .dictionary: DictionarySettingsView()
             case .shortcuts: TextShortcutsSettingsView()
+            case .ai:
+                if #available(macOS 26, *) {
+                    AISettingsView()
+                }
             case .general: GeneralSettingsView()
             case .history: HistorySettingsView()
             case .permissions: PermissionsSettingsView()

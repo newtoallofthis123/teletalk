@@ -19,6 +19,11 @@ struct OverlayView: View {
                     BouncingDots()
                     Text("Transcribing")
                 }
+            case .enhancing:
+                pillContent(tint: .purple) {
+                    BouncingDots()
+                    Text("Enhancing")
+                }
             case .inserting:
                 pillContent(tint: .green) {
                     Image(systemName: "checkmark.circle.fill")
