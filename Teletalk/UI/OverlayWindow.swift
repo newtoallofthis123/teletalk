@@ -73,8 +73,8 @@ final class OverlayWindow {
 
     private func createPanel() {
         let hostingView = NSHostingView(rootView: OverlayView(appState: appState))
-        let intrinsicSize = hostingView.fittingSize
-        let size = NSSize(width: max(intrinsicSize.width, 120), height: max(intrinsicSize.height, 36))
+        // Oversized transparent panel — SwiftUI pill centers itself, extra space is invisible
+        let size = NSSize(width: 400, height: 80)
         hostingView.frame = NSRect(origin: .zero, size: size)
 
         let panel = NSPanel(

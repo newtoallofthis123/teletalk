@@ -169,7 +169,7 @@ final class AudioRecorder {
             }
             let rms = sqrtf(sumOfSquares / Float(count))
             // Clamp to 0…1 (typical speech RMS is 0.01–0.3)
-            let normalized = min(rms * 5.0, 1.0)
+            let normalized = min(rms * 15.0, 1.0)
             Task { @MainActor in
                 onAudioLevel?(normalized)
             }

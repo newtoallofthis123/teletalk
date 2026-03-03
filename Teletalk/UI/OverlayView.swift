@@ -13,12 +13,12 @@ struct OverlayView: View {
             case .listening:
                 pillContent(tint: .blue) {
                     WaveformBars(level: appState.audioLevel)
-                    Text("Listening…")
+                    Text("Listening")
                 }
             case .transcribing:
                 pillContent(tint: .secondary) {
                     BouncingDots()
-                    Text("Transcribing…")
+                    Text("Transcribing")
                 }
             case .inserting:
                 pillContent(tint: .green) {
@@ -36,6 +36,7 @@ struct OverlayView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: appState.recordingState)
     }
 
@@ -43,9 +44,10 @@ struct OverlayView: View {
         HStack(spacing: 8) {
             content()
         }
-        .font(.system(size: 13, weight: .medium))
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .font(.system(size: 15, weight: .medium))
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .fixedSize()
         .background {
             Capsule()
                 .fill(tint.opacity(0.12))
@@ -61,9 +63,9 @@ struct WaveformBars: View {
     let level: Float
 
     private let barCount = 4
-    private let barWidth: CGFloat = 3
-    private let maxHeight: CGFloat = 16
-    private let minHeight: CGFloat = 3
+    private let barWidth: CGFloat = 4
+    private let maxHeight: CGFloat = 22
+    private let minHeight: CGFloat = 4
 
     var body: some View {
         HStack(spacing: 2) {
