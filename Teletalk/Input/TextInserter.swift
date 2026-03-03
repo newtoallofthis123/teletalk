@@ -5,7 +5,6 @@ import os
 /// Inserts transcribed text at the active cursor position.
 /// Strategy: try Accessibility API first, fall back to clipboard paste.
 final class TextInserter {
-
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "TextInserter")
 
     /// Insert text at the current cursor position in any app.
@@ -48,6 +47,7 @@ final class TextInserter {
             return false
         }
 
+        // swiftlint:disable:next force_cast
         let axElement = element as! AXUIElement
 
         // Try inserting at selection range first (preserves cursor position)
@@ -77,6 +77,7 @@ final class TextInserter {
         }
 
         var range = CFRange(location: 0, length: 0)
+        // swiftlint:disable:next force_cast
         guard AXValueGetValue(rangeValue as! AXValue, .cfRange, &range) else {
             return false
         }
@@ -95,9 +96,12 @@ final class TextInserter {
 
         // Build new value with text inserted at selection
         let startIndex = current.index(current.startIndex, offsetBy: min(range.location, current.count))
-        let endIndex = current.index(startIndex, offsetBy: min(range.length, current.count - min(range.location, current.count)))
+        let endIndex = current.index(
+            startIndex,
+            offsetBy: min(range.length, current.count - min(range.location, current.count))
+        )
         var newValue = current
-        newValue.replaceSubrange(startIndex..<endIndex, with: text)
+        newValue.replaceSubrange(startIndex ..< endIndex, with: text)
 
         let setResult = AXUIElementSetAttributeValue(
             element,
@@ -211,7 +215,8 @@ final class TextInserter {
     private func simulateKeyPress(keyCode: UInt16, flags: CGEventFlags) {
         let source = CGEventSource(stateID: .hidSystemState)
         guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true),
-              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false) else {
+              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
+        else {
             logger.error("Failed to create CGEvent for key simulation")
             return
         }

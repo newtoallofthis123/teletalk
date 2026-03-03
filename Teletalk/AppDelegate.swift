@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 try? await transcriptionEngine.initialize(models: models)
 
                 // Configure vocabulary boosting if dictionary has terms
-                if appState.dictionaryEnabled && !personalDictionary.terms.isEmpty {
+                if appState.dictionaryEnabled, !personalDictionary.terms.isEmpty {
                     await configureVocabularyWithStatus(terms: personalDictionary.terms)
                 }
             }
@@ -51,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let reconfigureVocabulary: () -> Void = { [weak self] in
                 guard let self else { return }
                 Task { @MainActor in
-                    if self.appState.dictionaryEnabled && !self.personalDictionary.terms.isEmpty {
+                    if self.appState.dictionaryEnabled, !self.personalDictionary.terms.isEmpty {
                         await self.configureVocabularyWithStatus(terms: self.personalDictionary.terms)
                     } else {
                         self.transcriptionEngine.disableVocabulary()
@@ -126,7 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 appState.refreshPermissions()
 
                 // If mic was revoked while recording, stop the pipeline
-                if previousMic == .granted && appState.permissions.microphone == .denied {
+                if previousMic == .granted, appState.permissions.microphone == .denied {
                     logger.warning("Microphone permission revoked")
                     if audioRecorder.state == .recording {
                         stopPipeline()

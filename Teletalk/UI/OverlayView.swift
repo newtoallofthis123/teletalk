@@ -2,7 +2,6 @@ import SwiftUI
 
 /// SwiftUI pill overlay showing current transcription state.
 struct OverlayView: View {
-
     let appState: AppState
 
     var body: some View {
@@ -27,7 +26,7 @@ struct OverlayView: View {
                         .transition(.scale.combined(with: .opacity))
                     Text("Done")
                 }
-            case .error(let message):
+            case let .error(message):
                 pillContent(tint: .red) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.red)
@@ -40,7 +39,7 @@ struct OverlayView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.7), value: appState.recordingState)
     }
 
-    private func pillContent<Content: View>(tint: Color, @ViewBuilder content: () -> Content) -> some View {
+    private func pillContent(tint: Color, @ViewBuilder content: () -> some View) -> some View {
         HStack(spacing: 8) {
             content()
         }
@@ -69,7 +68,7 @@ struct WaveformBars: View {
 
     var body: some View {
         HStack(spacing: 2) {
-            ForEach(0..<barCount, id: \.self) { index in
+            ForEach(0 ..< barCount, id: \.self) { index in
                 let scale = barScale(for: index)
                 RoundedRectangle(cornerRadius: barWidth / 2)
                     .fill(.primary)
@@ -101,7 +100,7 @@ struct BouncingDots: View {
 
     var body: some View {
         HStack(spacing: 3) {
-            ForEach(0..<dotCount, id: \.self) { index in
+            ForEach(0 ..< dotCount, id: \.self) { index in
                 Circle()
                     .fill(.primary)
                     .frame(width: dotSize, height: dotSize)

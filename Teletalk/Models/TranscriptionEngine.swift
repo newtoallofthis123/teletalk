@@ -1,10 +1,9 @@
+import FluidAudio
 import Foundation
 import os
-import FluidAudio
 
 /// Wraps FluidAudio's AsrManager to transcribe audio samples into text.
 final class TranscriptionEngine {
-
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "TranscriptionEngine")
 
     private var asrManager: AsrManager?
@@ -14,7 +13,7 @@ final class TranscriptionEngine {
     func initialize(models: AsrModels) async throws {
         let manager = AsrManager(config: .default)
         try await manager.initialize(models: models)
-        self.asrManager = manager
+        asrManager = manager
 
         logger.info("TranscriptionEngine initialized")
     }
@@ -46,6 +45,7 @@ final class TranscriptionEngine {
 
         return text
     }
+
     /// Configure vocabulary boosting with user's personal dictionary terms.
     func configureVocabulary(terms: [DictionaryTerm]) async throws {
         guard let asrManager else {

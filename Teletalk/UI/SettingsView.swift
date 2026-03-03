@@ -1,7 +1,7 @@
 import CoreAudio
-import SwiftUI
 import KeyboardShortcuts
 import LaunchAtLogin
+import SwiftUI
 
 // MARK: - Main Settings View
 
@@ -114,7 +114,7 @@ struct AudioSettingsView: View {
     @Environment(AudioDeviceEnumerator.self) private var audioDevices
 
     private let durationOptions: [(String, Double)] = [
-        ("30s", 30), ("60s", 60), ("2m", 120), ("5m", 300)
+        ("30s", 30), ("60s", 60), ("2m", 120), ("5m", 300),
     ]
 
     var body: some View {
@@ -154,7 +154,7 @@ struct AudioSettingsView: View {
                     Text("\(Int(appState.minRecordingDuration * 1000)) ms")
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
-                    Stepper("", value: $state.minRecordingDuration, in: 0.1...1.0, step: 0.1)
+                    Stepper("", value: $state.minRecordingDuration, in: 0.1 ... 1.0, step: 0.1)
                         .labelsHidden()
                 }
             } header: {
@@ -489,7 +489,8 @@ struct HistorySettingsView: View {
                 ContentUnavailableView(
                     searchText.isEmpty ? "No Transcriptions Yet" : "No Results",
                     systemImage: searchText.isEmpty ? "text.bubble" : "magnifyingglass",
-                    description: Text(searchText.isEmpty ? "Your transcriptions will appear here." : "Try a different search.")
+                    description: Text(searchText
+                        .isEmpty ? "Your transcriptions will appear here." : "Try a different search.")
                 )
             } else {
                 List(filteredEntries) { entry in
@@ -555,7 +556,7 @@ struct DictionarySettingsView: View {
                     Label("Vocabulary boosting active", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                         .font(.caption)
-                case .error(let message):
+                case let .error(message):
                     Label(message, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.red)
                         .font(.caption)
@@ -566,9 +567,11 @@ struct DictionarySettingsView: View {
                 Label("Vocabulary Boosting", systemImage: "character.book.closed")
                     .foregroundStyle(.secondary)
             } footer: {
-                Text("Uses a small CTC model (~64 MB) to bias transcription toward your terms. Requires slightly more memory.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                Text(
+                    "Uses a small CTC model (~64 MB) to bias transcription toward your terms. Requires slightly more memory."
+                )
+                .font(.caption)
+                .foregroundStyle(.tertiary)
             }
 
             Section {

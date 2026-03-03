@@ -7,7 +7,6 @@ import os
 @MainActor
 @Observable
 final class AudioDeviceEnumerator {
-
     struct AudioDevice: Identifiable, Hashable {
         let id: AudioDeviceID
         let uid: String

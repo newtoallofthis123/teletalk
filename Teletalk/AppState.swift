@@ -6,7 +6,6 @@ import SwiftUI
 @MainActor
 @Observable
 final class AppState {
-
     // MARK: - Model State
 
     enum ModelState: Equatable {
@@ -80,9 +79,11 @@ final class AppState {
 
     // MARK: - Hotkey Settings
 
-    var toggleShortcutEnabled: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.toggleShortcutEnabled) as? Bool ?? true {
+    var toggleShortcutEnabled: Bool = UserDefaults.standard
+        .object(forKey: Constants.Defaults.toggleShortcutEnabled) as? Bool ?? true
+    {
         didSet {
-            if !toggleShortcutEnabled && !holdShortcutEnabled {
+            if !toggleShortcutEnabled, !holdShortcutEnabled {
                 toggleShortcutEnabled = true
                 return
             }
@@ -90,9 +91,11 @@ final class AppState {
         }
     }
 
-    var holdShortcutEnabled: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.holdShortcutEnabled) as? Bool ?? true {
+    var holdShortcutEnabled: Bool = UserDefaults.standard
+        .object(forKey: Constants.Defaults.holdShortcutEnabled) as? Bool ?? true
+    {
         didSet {
-            if !holdShortcutEnabled && !toggleShortcutEnabled {
+            if !holdShortcutEnabled, !toggleShortcutEnabled {
                 holdShortcutEnabled = true
                 return
             }
@@ -102,19 +105,25 @@ final class AppState {
 
     // MARK: - Audio Settings
 
-    var selectedAudioDeviceUID: String? = UserDefaults.standard.string(forKey: Constants.Defaults.selectedAudioDeviceUID) {
+    var selectedAudioDeviceUID: String? = UserDefaults.standard
+        .string(forKey: Constants.Defaults.selectedAudioDeviceUID)
+    {
         didSet {
             UserDefaults.standard.set(selectedAudioDeviceUID, forKey: Constants.Defaults.selectedAudioDeviceUID)
         }
     }
 
-    var maxRecordingDuration: Double = UserDefaults.standard.object(forKey: Constants.Defaults.maxRecordingDuration) as? Double ?? 120 {
+    var maxRecordingDuration: Double = UserDefaults.standard
+        .object(forKey: Constants.Defaults.maxRecordingDuration) as? Double ?? 120
+    {
         didSet {
             UserDefaults.standard.set(maxRecordingDuration, forKey: Constants.Defaults.maxRecordingDuration)
         }
     }
 
-    var minRecordingDuration: Double = UserDefaults.standard.object(forKey: Constants.Defaults.minRecordingDuration) as? Double ?? 0.2 {
+    var minRecordingDuration: Double = UserDefaults.standard
+        .object(forKey: Constants.Defaults.minRecordingDuration) as? Double ?? 0.2
+    {
         didSet {
             UserDefaults.standard.set(minRecordingDuration, forKey: Constants.Defaults.minRecordingDuration)
         }
@@ -122,7 +131,9 @@ final class AppState {
 
     // MARK: - Model Settings
 
-    var selectedModelVersion: String = UserDefaults.standard.string(forKey: Constants.Defaults.selectedModelVersion) ?? "v2" {
+    var selectedModelVersion: String = UserDefaults.standard
+        .string(forKey: Constants.Defaults.selectedModelVersion) ?? "v2"
+    {
         didSet {
             UserDefaults.standard.set(selectedModelVersion, forKey: Constants.Defaults.selectedModelVersion)
         }
@@ -131,7 +142,8 @@ final class AppState {
     // MARK: - General Settings
 
     var insertionMethod: InsertionMethod = {
-        let stored = UserDefaults.standard.string(forKey: Constants.Defaults.insertionMethod) ?? InsertionMethod.auto.rawValue
+        let stored = UserDefaults.standard.string(forKey: Constants.Defaults.insertionMethod) ?? InsertionMethod.auto
+            .rawValue
         return InsertionMethod(rawValue: stored) ?? .auto
     }() {
         didSet {
@@ -146,7 +158,8 @@ final class AppState {
     }
 
     var overlayPosition: OverlayPosition = {
-        let stored = UserDefaults.standard.string(forKey: Constants.Defaults.overlayPosition) ?? OverlayPosition.bottomCenter.rawValue
+        let stored = UserDefaults.standard.string(forKey: Constants.Defaults.overlayPosition) ?? OverlayPosition
+            .bottomCenter.rawValue
         return OverlayPosition(rawValue: stored) ?? .bottomCenter
     }() {
         didSet {
@@ -156,7 +169,9 @@ final class AppState {
 
     // MARK: - Feedback Settings
 
-    var audioFeedbackEnabled: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.audioFeedbackEnabled) as? Bool ?? true {
+    var audioFeedbackEnabled: Bool = UserDefaults.standard
+        .object(forKey: Constants.Defaults.audioFeedbackEnabled) as? Bool ?? true
+    {
         didSet {
             UserDefaults.standard.set(audioFeedbackEnabled, forKey: Constants.Defaults.audioFeedbackEnabled)
         }
@@ -175,7 +190,9 @@ final class AppState {
 
     var onDictionaryEnabledChanged: (() -> Void)?
 
-    var dictionaryEnabled: Bool = UserDefaults.standard.object(forKey: Constants.Defaults.dictionaryEnabled) as? Bool ?? true {
+    var dictionaryEnabled: Bool = UserDefaults.standard
+        .object(forKey: Constants.Defaults.dictionaryEnabled) as? Bool ?? true
+    {
         didSet {
             UserDefaults.standard.set(dictionaryEnabled, forKey: Constants.Defaults.dictionaryEnabled)
             onDictionaryEnabledChanged?()
@@ -195,12 +212,12 @@ final class AppState {
         switch modelState {
         case .notDownloaded:
             return "Model not downloaded"
-        case .downloading(let progress):
+        case let .downloading(progress):
             if progress < 0 {
                 return "Downloading model…"
             }
             return "Downloading model… \(Int(progress * 100))%"
-        case .error(let message):
+        case let .error(message):
             return "Error: \(message)"
         case .ready:
             break
@@ -217,7 +234,7 @@ final class AppState {
             return "Transcribing…"
         case .inserting:
             return "Inserting text…"
-        case .error(let message):
+        case let .error(message):
             return "Error: \(message)"
         }
     }

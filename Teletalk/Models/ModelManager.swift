@@ -1,7 +1,7 @@
+import FluidAudio
 import Foundation
 import Observation
 import os
-import FluidAudio
 
 // MARK: - Model Types
 
@@ -33,7 +33,6 @@ struct ModelInfo: Identifiable {
 @MainActor
 @Observable
 final class ModelManager {
-
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "ModelManager")
 
     private(set) var models: AsrModels?
@@ -47,7 +46,9 @@ final class ModelManager {
         availableModels.compactMap(\.diskSize).reduce(0, +)
     }
 
-    var loadedModels: AsrModels? { models }
+    var loadedModels: AsrModels? {
+        models
+    }
 
     // MARK: - Lifecycle
 
@@ -63,7 +64,7 @@ final class ModelManager {
         do {
             updateStatus(for: version, to: .downloading)
             let loaded = try await AsrModels.downloadAndLoad(version: version)
-            self.models = loaded
+            models = loaded
 
             updateStatus(for: version, to: .active)
             appState.modelState = .ready
@@ -130,7 +131,7 @@ final class ModelManager {
 
         do {
             let loaded = try await AsrModels.downloadAndLoad(version: version)
-            self.models = loaded
+            models = loaded
 
             updateStatus(for: version, to: .active)
             appState.selectedModelVersion = version == .v2 ? "v2" : "v3"
@@ -198,7 +199,11 @@ final class ModelManager {
 
     private func directorySize(at url: URL) -> Int64? {
         let fm = FileManager.default
-        guard let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) else {
+        guard let enumerator = fm.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else {
             return nil
         }
         var total: Int64 = 0

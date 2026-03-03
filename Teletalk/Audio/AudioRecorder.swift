@@ -6,7 +6,6 @@ import os
 /// Outputs 16kHz mono Float32 PCM samples suitable for Parakeet TDT.
 @MainActor
 final class AudioRecorder {
-
     enum State: Equatable {
         case idle
         case recording
@@ -31,7 +30,11 @@ final class AudioRecorder {
 
     /// Starts recording from the specified audio device (or system default if nil).
     /// Accumulates 16kHz mono Float32 samples into an internal buffer.
-    func startRecording(deviceUID: String? = nil, maxDuration: TimeInterval = 120, minDuration: TimeInterval = 0.2) throws {
+    func startRecording(
+        deviceUID: String? = nil,
+        maxDuration: TimeInterval = 120,
+        minDuration: TimeInterval = 0.2
+    ) throws {
         guard state == .idle else {
             logger.warning("startRecording called while already recording")
             return
@@ -81,9 +84,9 @@ final class AudioRecorder {
         maxDurationTask = Task { @MainActor [weak self] in
             guard let self else { return }
             try? await Task.sleep(for: .seconds(self.maxDuration))
-            guard self.state == .recording else { return }
-            self.logger.warning("Max recording duration reached, auto-stopping")
-            self.onAutoStop?()
+            guard state == .recording else { return }
+            logger.warning("Max recording duration reached, auto-stopping")
+            onAutoStop?()
         }
 
         // Watch for audio hardware changes (mic disconnect)
@@ -161,9 +164,9 @@ final class AudioRecorder {
         let newSamples = Array(UnsafeBufferPointer(start: channelData, count: count))
 
         // Calculate RMS for waveform visualization
-        if onAudioLevel != nil && count > 0 {
+        if onAudioLevel != nil, count > 0 {
             var sumOfSquares: Float = 0
-            for i in 0..<count {
+            for i in 0 ..< count {
                 let sample = channelData[i]
                 sumOfSquares += sample * sample
             }
@@ -251,7 +254,8 @@ final class AudioRecorder {
             var deviceUIDRef: CFString = "" as CFString
             var uidSize = UInt32(MemoryLayout<CFString>.size)
             if AudioObjectGetPropertyData(deviceID, &uidAddress, 0, nil, &uidSize, &deviceUIDRef) == noErr,
-               (deviceUIDRef as String) == uid {
+               (deviceUIDRef as String) == uid
+            {
                 return deviceID
             }
         }

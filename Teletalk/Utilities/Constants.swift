@@ -22,7 +22,7 @@ enum Constants {
         static let selectedAudioDeviceUID = "selectedAudioDeviceUID"
         static let maxRecordingDuration = "maxRecordingDuration"
         static let minRecordingDuration = "minRecordingDuration"
-        // Models
+        /// Models
         static let selectedModelVersion = "selectedModelVersion"
         // General
         static let insertionMethod = "insertionMethod"
@@ -48,7 +48,7 @@ enum Constants {
     // MARK: - Audio
 
     enum Audio {
-        static let sampleRate: Double = 16_000
+        static let sampleRate: Double = 16000
     }
 
     // MARK: - UI

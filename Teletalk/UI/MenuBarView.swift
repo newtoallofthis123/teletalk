@@ -93,7 +93,8 @@ struct MenuBarView: View {
 
     private var selectedDeviceName: String {
         if let uid = appState.selectedAudioDeviceUID,
-           let device = audioDeviceEnumerator.inputDevices.first(where: { $0.uid == uid }) {
+           let device = audioDeviceEnumerator.inputDevices.first(where: { $0.uid == uid })
+        {
             return device.name
         }
         return "System Default"

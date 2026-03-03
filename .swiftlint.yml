@@ -1,0 +1,21 @@
+disabled_rules:
+  - opening_brace # Conflicts with swiftformat's wrapMultilineStatementBraces
+  - trailing_comma # Project convention: keep trailing commas in collections
+
+identifier_name:
+  min_length: 1
+
+type_name:
+  min_length: 2
+
+line_length:
+  warning: 130
+  error: 200
+
+file_length:
+  warning: 700
+  error: 1000
+
+function_body_length:
+  warning: 60
+  error: 100

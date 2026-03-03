@@ -1,6 +1,6 @@
 import AppKit
-import os
 import KeyboardShortcuts
+import os
 
 extension KeyboardShortcuts.Name {
     static let dictateToggle = Self("dictateToggle", default: .init(.space, modifiers: [.control, .shift]))
@@ -10,7 +10,6 @@ extension KeyboardShortcuts.Name {
 /// Manages global hotkey registration for hold-to-talk and toggle dictation modes.
 @MainActor
 final class HotkeyManager {
-
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "HotkeyManager")
 
     private let appState: AppState
@@ -26,7 +25,12 @@ final class HotkeyManager {
     /// Minimum hold duration to count as intentional (not accidental tap).
     private let debounceThreshold: Duration = .milliseconds(200)
 
-    init(appState: AppState, onStartRecording: @escaping () -> Void, onStopRecording: @escaping () -> Void, onCancel: @escaping () -> Void) {
+    init(
+        appState: AppState,
+        onStartRecording: @escaping () -> Void,
+        onStopRecording: @escaping () -> Void,
+        onCancel: @escaping () -> Void
+    ) {
         self.appState = appState
         self.onStartRecording = onStartRecording
         self.onStopRecording = onStopRecording
@@ -85,17 +89,19 @@ final class HotkeyManager {
             guard event.keyCode == 53 else { return }
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                switch self.appState.recordingState {
+                switch appState.recordingState {
                 case .listening, .transcribing:
-                    self.logger.info("Escape pressed — cancelling pipeline")
-                    self.onCancel()
+                    logger.info("Escape pressed — cancelling pipeline")
+                    onCancel()
                 default:
                     break
                 }
             }
         }
 
-        logger.info("Hotkey handlers set up (toggle: \(self.appState.toggleShortcutEnabled), hold: \(self.appState.holdShortcutEnabled))")
+        let toggle = self.appState.toggleShortcutEnabled
+        let hold = self.appState.holdShortcutEnabled
+        logger.info("Hotkey handlers set up (toggle: \(toggle), hold: \(hold))")
     }
 
     private func handleHoldKeyDown() {

@@ -88,7 +88,7 @@ struct SetupView: View {
                 // If we're here and model isn't downloading yet, show a waiting state.
                 ProgressView()
 
-            case .downloading(let progress):
+            case let .downloading(progress):
                 Text("Downloading model…")
                     .foregroundStyle(.secondary)
                 ProgressView(value: progress)
@@ -106,7 +106,7 @@ struct SetupView: View {
                     currentStep = .ready
                 }
 
-            case .error(let msg):
+            case let .error(msg):
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.largeTitle)
                     .foregroundStyle(.red)

@@ -5,7 +5,6 @@ import SwiftUI
 /// Positioned at bottom-center of the main screen.
 @MainActor
 final class OverlayWindow {
-
     private var panel: NSPanel?
     private let appState: AppState
 
@@ -46,17 +45,17 @@ final class OverlayWindow {
         guard let panel else { return }
         let slideOffset: CGFloat = slideDirection()
 
-        NSAnimationContext.runAnimationGroup({ context in
+        NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.25
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)
             panel.animator().alphaValue = 0
             var origin = panel.frame.origin
             origin.y -= slideOffset
             panel.animator().setFrameOrigin(origin)
-        }, completionHandler: { [weak self] in
+        } completionHandler: { [weak self] in
             self?.panel?.orderOut(nil)
             self?.panel = nil
-        })
+        }
     }
 
     // MARK: - Private

@@ -4,7 +4,6 @@ import Cocoa
 /// Checks and requests app permissions (microphone, accessibility).
 @MainActor
 enum Permissions {
-
     // MARK: - Microphone
 
     static func microphoneStatus() -> AppState.PermissionStatus {
