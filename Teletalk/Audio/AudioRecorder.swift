@@ -20,7 +20,7 @@ final class AudioRecorder {
     var onAudioLevel: ((Float) -> Void)?
 
     private let logger = Logger(subsystem: Constants.bundleIdentifier, category: "AudioRecorder")
-    private let engine = AVAudioEngine()
+    private var engine: AVAudioEngine?
     private var samples: [Float] = []
     private var recordingStartTime: Date?
     private var maxDurationTask: Task<Void, Never>?
@@ -45,6 +45,8 @@ final class AudioRecorder {
         samples.removeAll()
         recordingStartTime = Date()
 
+        let engine = AVAudioEngine()
+        self.engine = engine
         let inputNode = engine.inputNode
 
         // Set specific audio device if requested
@@ -105,8 +107,9 @@ final class AudioRecorder {
         maxDurationTask = nil
         removeAudioConfigObserver()
 
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+        engine?.inputNode.removeTap(onBus: 0)
+        engine?.stop()
+        engine = nil
         state = .idle
 
         let duration = recordingStartTime.map { Date().timeIntervalSince($0) } ?? 0
@@ -186,7 +189,7 @@ final class AudioRecorder {
     private func observeAudioConfigChanges() {
         configObserver = NotificationCenter.default.addObserver(
             forName: .AVAudioEngineConfigurationChange,
-            object: engine,
+            object: self.engine,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
